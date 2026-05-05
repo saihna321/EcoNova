@@ -1,8 +1,14 @@
+import { RouterProvider } from "react-router";
+import { router } from "./routes";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { LanguageProvider } from "./i18n";
 
-function App() {
-  
-   return <h1>EcoNova Dashboard</h1>;
-
+export default function App() {
+  return (
+    <LanguageProvider>
+      <ErrorBoundary>
+        <RouterProvider router={router} />
+      </ErrorBoundary>
+    </LanguageProvider>
+  );
 }
-
-export default App
