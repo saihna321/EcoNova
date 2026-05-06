@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   FileBarChart2,
   Download,
@@ -50,7 +50,7 @@ export function Reports() {
 
   const summaryKpis = [
     { label: t("reports.generated"), value: "48", sub: t("reports.thisYear"), icon: FileBarChart2, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-    { label: t("reports.meanGain"), value: "+0.18", sub: t("reports.sinceBaseline"), icon: TrendingUp, color: "text-[#00FF88]", bg: "bg-[#00FF88]/10 border-[#00FF88]/20" },
+    { label: t("reports.meanGain"), value: "+0.18", sub: t("reports.sinceBaseline"), icon: TrendingUp, color: "text-emerald-300", bg: "bg-emerald-500/10 border-emerald-500/20" },
     { label: t("reports.vegetationCover"), value: "72%", sub: t("reports.acrossAllSites"), icon: Leaf, color: "text-lime-400", bg: "bg-lime-500/10 border-lime-500/20" },
     { label: t("reports.complianceRate"), value: "83%", sub: "Q1 2025", icon: BarChart2, color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
   ];
@@ -68,7 +68,7 @@ export function Reports() {
           <h2 className="text-slate-200">{t("reports.title")}</h2>
           <p className="text-sm text-slate-500 mt-0.5">{t("reports.subtitle")}</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#00FF88]/15 border border-[#00FF88]/25 text-[#00FF88] hover:bg-[#00FF88]/20 transition-colors text-sm">
+        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/20 transition-colors text-sm">
           <Download className="w-4 h-4" />
           {t("reports.exportPdf")}
         </button>
@@ -79,7 +79,7 @@ export function Reports() {
         {summaryKpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.label} className={`rounded-xl border p-4 ${kpi.bg}`}>
+            <div key={kpi.label} className={`rounded-lg border p-4 ${kpi.bg}`}>
               <div className="flex items-start justify-between">
                 <Icon className={`w-5 h-5 ${kpi.color}`} />
               </div>
@@ -92,7 +92,7 @@ export function Reports() {
       </div>
 
       {/* Multi-site NDVI chart */}
-      <div className="rounded-xl bg-[#1A1F2B] border border-[#00FF88]/12 p-5">
+      <div className="rounded-lg bg-[#111113] border border-zinc-800 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5">
           <div>
             <h3 className="text-slate-200">{t("reports.ndviBySite")}</h3>
@@ -116,7 +116,7 @@ export function Reports() {
           </div>
         </div>
         {selectedSites.length === 0 ? (
-          <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-[#00FF88]/15 bg-[#13171F]/40 text-sm text-slate-500">
+          <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-zinc-800 bg-[#09090b]/40 text-sm text-slate-500">
             {t("reports.selectSite")}
           </div>
         ) : (
@@ -130,11 +130,11 @@ export function Reports() {
                   </linearGradient>
                 ))}
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#252D3D" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis dataKey="q" tick={{ fill: "#64748b", fontSize: 10 }} tickLine={false} axisLine={false} />
               <YAxis domain={[0, 0.75]} tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: "#1F2535", border: "1px solid rgba(0,255,136,0.25)", borderRadius: "8px", color: "#e2e8f0", fontSize: 12 }}
+                contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(34,197,94,0.25)", borderRadius: "8px", color: "#e2e8f0", fontSize: 12 }}
               />
               <Legend
                 formatter={(v) => <span style={{ color: "#94a3b8", fontSize: 11 }}>{siteLabels[v] ?? v}</span>}
@@ -162,47 +162,47 @@ export function Reports() {
       {/* Annual progress + reports list */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Annual progress */}
-        <div className="rounded-xl bg-[#1A1F2B] border border-[#00FF88]/12 p-5">
+        <div className="rounded-lg bg-[#111113] border border-zinc-800 p-5">
           <h3 className="text-slate-200 mb-1">{t("reports.annualProgress")}</h3>
           <p className="text-xs text-slate-500 mb-4">{t("reports.annualSub")}</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={annualProgress} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#252D3D" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis dataKey="year" tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: "#1F2535", border: "1px solid rgba(0,255,136,0.25)", borderRadius: "8px", color: "#e2e8f0", fontSize: 12 }}
+                contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(34,197,94,0.25)", borderRadius: "8px", color: "#e2e8f0", fontSize: 12 }}
               />
               <Legend formatter={(v) => <span style={{ color: "#94a3b8", fontSize: 11 }}>{v}</span>} />
-              <Bar dataKey="completed" name={t("reports.completed")} fill="#00FF88" radius={[4, 4, 0, 0]} stackId="a" />
+              <Bar dataKey="completed" name={t("reports.completed")} fill="#22c55e" radius={[4, 4, 0, 0]} stackId="a" />
               <Bar dataKey="ongoing" name={t("reports.ongoing")} fill="#3b82f6" radius={[0, 0, 0, 0]} stackId="a" />
-              <Bar dataKey="notStarted" name={t("reports.notStarted")} fill="#252D3D" radius={[0, 0, 4, 4]} stackId="a" />
+              <Bar dataKey="notStarted" name={t("reports.notStarted")} fill="#27272a" radius={[0, 0, 4, 4]} stackId="a" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Report list */}
-        <div className="rounded-xl bg-[#1A1F2B] border border-[#00FF88]/12 p-5">
+        <div className="rounded-lg bg-[#111113] border border-zinc-800 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-slate-200">{t("reports.recentReports")}</h3>
-            <button className="text-xs text-[#00FF88] hover:text-[#00cc6e]">{t("common.viewAll")}</button>
+            <button className="text-xs text-emerald-300 hover:text-[#16a34a]">{t("common.viewAll")}</button>
           </div>
           <div className="space-y-2">
             {demoReports.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-[#00FF88]/15 hover:bg-white/3 transition-all cursor-pointer"
+                className="flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-zinc-800 hover:bg-white/5 transition-all cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-lg bg-[#252D3D] flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-[#27272a] flex items-center justify-center flex-shrink-0">
                   <FileBarChart2 className={`w-4 h-4 ${reportTypeStyle(r.type)}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-slate-300 truncate">{r.title}</div>
                   <div className="text-xs text-slate-600 mt-0.5">
                     <span className={reportTypeStyle(r.type)}>{r.type}</span>
-                    <span className="mx-1.5">·</span>
+                    <span className="mx-1.5">-</span>
                     {r.date}
-                    <span className="mx-1.5">·</span>
+                    <span className="mx-1.5">-</span>
                     {r.sites} sites
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   AlertTriangle,
   AlertCircle,
@@ -14,6 +14,7 @@ import {
   Clock,
   MapPin,
 } from "lucide-react";
+import { Button } from "./ui";
 import { useLanguage } from "../i18n";
 import { demoAlerts } from "../data/demoAlerts";
 
@@ -41,10 +42,10 @@ const severityConfig = {
   },
   resolved: {
     icon: CheckCircle,
-    color: "text-[#00FF88]",
-    bg: "bg-[#00FF88]/10",
-    border: "border-[#00FF88]/25",
-    badge: "text-[#00FF88] bg-[#00FF88]/10 border-[#00FF88]/25",
+    color: "text-emerald-300",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/25",
+    badge: "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
   },
 };
 
@@ -104,10 +105,10 @@ export function Alerts() {
           <h2 className="text-slate-200">{t("alerts.title")}</h2>
           <p className="text-sm text-slate-500 mt-0.5">{t("alerts.subtitle")}</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1F2535] border border-[#00FF88]/15 text-slate-300 hover:text-slate-100 text-sm transition-colors">
+        <Button variant="outline">
           <Bell className="w-4 h-4" />
           {t("alerts.configure")}
-        </button>
+        </Button>
       </div>
 
       {/* Summary counters */}
@@ -120,8 +121,8 @@ export function Alerts() {
             <button
               key={sev}
               onClick={() => setFilter(filter === sev ? "all" : sev)}
-              className={`rounded-xl border p-4 text-left transition-all ${
-                filter === sev ? `${cfg.bg} ${cfg.border}` : "bg-[#1A1F2B] border-[#00FF88]/10 hover:border-[#00FF88]/20"
+              className={`rounded-lg border p-4 text-left transition-all ${
+                filter === sev ? `${cfg.bg} ${cfg.border}` : "bg-zinc-950/70 border-zinc-800 hover:border-zinc-700"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -145,8 +146,8 @@ export function Alerts() {
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-xs transition-all capitalize ${
               filter === f
-                ? "bg-[#00FF88]/15 border border-[#00FF88]/30 text-[#00FF88]"
-                : "border border-[#00FF88]/10 text-slate-500 hover:text-slate-300 hover:border-[#00FF88]/20"
+                ? "bg-emerald-500/10 border border-emerald-500/25 text-emerald-300"
+                : "border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
             }`}
           >
             {f === "all" ? t("alerts.all", { count: alerts.length }) : t(`severity.${f}`)}
@@ -174,9 +175,9 @@ export function Alerts() {
           return (
             <div
               key={alert.id}
-              className={`rounded-xl border transition-all ${
+              className={`rounded-lg border transition-all ${
                 alert.acknowledged
-                  ? "bg-[#1A1F2B]/60 border-[#00FF88]/8 opacity-75"
+                  ? "bg-zinc-950/50 border-zinc-800 opacity-75"
                   : `${cfg.bg} ${cfg.border}`
               }`}
             >
@@ -207,7 +208,7 @@ export function Alerts() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {Number.isFinite(alert.ndviChange) && (
-                        <span className={`text-xs font-mono ${alert.ndviChange < 0 ? "text-red-400" : "text-[#00FF88]"}`}>
+                        <span className={`text-xs font-mono ${alert.ndviChange < 0 ? "text-red-400" : "text-emerald-300"}`}>
                           {alert.ndviChange > 0 ? "+" : ""}{alert.ndviChange.toFixed(2)} NDVI
                         </span>
                       )}
@@ -232,23 +233,25 @@ export function Alerts() {
                   )}
                   <div className="mt-4 flex gap-3">
                     {!alert.acknowledged && (
-                      <button
+                      <Button
                         onClick={() => acknowledge(alert.id)}
-                        className="px-4 py-2 rounded-lg bg-[#00FF88]/15 border border-[#00FF88]/25 text-[#00FF88] hover:bg-[#00FF88]/20 text-xs transition-colors"
+                        size="sm"
                       >
                         {t("alerts.acknowledge")}
-                      </button>
+                      </Button>
                     )}
-                    <button className="px-4 py-2 rounded-lg bg-[#252D3D] border border-[#252D3D] text-slate-300 hover:bg-[#2D3548] text-xs transition-colors">
+                    <Button variant="secondary" size="sm">
                       {t("alerts.viewSite")}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => dismiss(alert.id)}
-                      className="ml-auto px-3 py-2 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/5 text-xs transition-colors flex items-center gap-1"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto"
                     >
                       <X className="w-3.5 h-3.5" />
                       {t("alerts.dismiss")}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

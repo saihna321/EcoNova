@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   Mountain,
   MapPin,
@@ -22,7 +22,7 @@ import { useLanguage } from "../i18n";
 import { demoSites, siteImages } from "../data/demoSites";
 
 function ndviColor(v) {
-  if (v >= 0.6) return "#00FF88";
+  if (v >= 0.6) return "#22c55e";
   if (v >= 0.45) return "#84cc16";
   if (v >= 0.3) return "#eab308";
   if (v >= 0.15) return "#f97316";
@@ -31,7 +31,7 @@ function ndviColor(v) {
 
 function statusStyle(s) {
   const map = {
-    achieved: "text-[#00FF88] bg-[#00FF88]/10 border-[#00FF88]/25",
+    achieved: "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
     "on-track": "text-blue-400 bg-blue-400/10 border-blue-500/30",
     "at-risk": "text-yellow-400 bg-yellow-400/10 border-yellow-500/30",
     critical: "text-red-400 bg-red-400/10 border-red-500/30",
@@ -59,7 +59,7 @@ export function Sites() {
   const { t } = useLanguage();
 
   const stats = [
-    { label: t("sites.totalArea"), value: "1,059 ha", color: "text-[#00FF88]", bg: "bg-[#00FF88]/10 border-[#00FF88]/20" },
+    { label: t("sites.totalArea"), value: "1,059 ha", color: "text-emerald-300", bg: "bg-emerald-500/10 border-emerald-500/20" },
     { label: t("sites.onTrack"), value: "4 / 5", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
     { label: t("sites.avgNdvi"), value: "0.556", color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
     { label: t("sites.targetAchievement"), value: "81.6%", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
@@ -86,7 +86,7 @@ export function Sites() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("sites.search")}
-              className="pl-9 pr-4 py-2 bg-[#1A1F2B] border border-[#00FF88]/15 rounded-lg text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-[#00FF88]/35 w-52"
+              className="pl-9 pr-4 py-2 bg-[#111113] border border-zinc-800 rounded-lg text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 w-52"
             />
           </div>
           <div className="relative">
@@ -94,7 +94,7 @@ export function Sites() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-[#1A1F2B] border border-[#00FF88]/15 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-[#00FF88]/35 appearance-none cursor-pointer"
+              className="pl-9 pr-4 py-2 bg-[#111113] border border-zinc-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-emerald-500/50 appearance-none cursor-pointer"
             >
               <option value="all">{t("sites.allStatus")}</option>
               <option value="achieved">{t("status.achieved")}</option>
@@ -108,7 +108,7 @@ export function Sites() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={`rounded-xl border p-4 ${stat.bg}`}>
+          <div key={stat.label} className={`rounded-lg border p-4 ${stat.bg}`}>
             <div className={`text-xl ${stat.color}`}>{stat.value}</div>
             <div className="text-xs text-slate-500 mt-1">{stat.label}</div>
           </div>
@@ -117,7 +117,7 @@ export function Sites() {
 
       <div className="space-y-3">
         {filtered.length === 0 && (
-          <div className="rounded-xl border border-dashed border-[#00FF88]/15 bg-[#1A1F2B]/60 p-8 text-center">
+          <div className="rounded-lg border border-dashed border-zinc-800 bg-[#111113]/60 p-8 text-center">
             <div className="text-sm text-slate-300">{t("sites.noMatches")}</div>
             <div className="mt-1 text-xs text-slate-500">{t("sites.adjustFilters")}</div>
           </div>
@@ -127,7 +127,7 @@ export function Sites() {
           return (
             <div
               key={site.id}
-              className="rounded-xl bg-[#1A1F2B] border border-[#00FF88]/10 overflow-hidden"
+              className="rounded-lg bg-[#111113] border border-zinc-800 overflow-hidden"
             >
               <div
                 className="flex items-center gap-4 p-4 cursor-pointer hover:bg-white/2 transition-colors"
@@ -179,7 +179,7 @@ export function Sites() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-2.5 h-1.5 bg-[#252D3D] rounded-full overflow-hidden max-w-md">
+                  <div className="mt-2.5 h-1.5 bg-[#27272a] rounded-full overflow-hidden max-w-md">
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
@@ -192,7 +192,7 @@ export function Sites() {
               </div>
 
               {isExpanded && (
-                <div className="border-t border-[#00FF88]/8 p-4 bg-[#1F2535]/50">
+                <div className="border-t border-zinc-800 p-4 bg-[#18181b]/50">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="space-y-4">
                       <div>
@@ -225,11 +225,11 @@ export function Sites() {
                       </div>
                       <ResponsiveContainer width="100%" height={140}>
                         <LineChart data={site.ndviHistory} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#252D3D" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                           <XAxis dataKey="m" tick={{ fill: "#64748b", fontSize: 10 }} tickLine={false} axisLine={false} />
                           <YAxis domain={[0, 0.75]} tick={{ fill: "#64748b", fontSize: 10 }} tickLine={false} axisLine={false} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "#1F2535", border: "1px solid rgba(0,255,136,0.25)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
+                            contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(34,197,94,0.25)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
                           />
                           <Line
                             type="monotone"

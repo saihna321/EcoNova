@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+﻿import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Layers,
   ZoomIn,
@@ -25,7 +25,7 @@ import {
 
 function NDVILegend({ title }) {
   return (
-    <div className="rounded-lg bg-[#1A1F2B]/90 border border-[#00FF88]/15 p-3">
+    <div className="rounded-lg bg-[#111113]/90 border border-zinc-800 p-3">
       <div className="text-xs text-slate-400 mb-2">{title}</div>
       <div className="flex gap-0.5">
         {ndviLegendStops.map((s) => (
@@ -164,9 +164,9 @@ export function SatelliteViewer() {
   return (
     <div className="flex h-full">
       {/* Left panel */}
-      <div className="w-72 flex-shrink-0 bg-[#1A1F2B] border-r border-[#00FF88]/10 flex flex-col overflow-y-auto">
+      <div className="w-72 flex-shrink-0 bg-[#111113] border-r border-zinc-800 flex flex-col overflow-y-auto">
         {/* Site selector */}
-        <div className="p-4 border-b border-[#00FF88]/10">
+        <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("satellite.mineSite")}</div>
           <div className="space-y-1">
             {demoSites.map((site, i) => (
@@ -175,7 +175,7 @@ export function SatelliteViewer() {
                 onClick={() => setSelectedSite(i)}
                 className={`w-full text-left px-3 py-2.5 rounded-lg transition-all ${
                   selectedSite === i
-                    ? "bg-[#00FF88]/12 border border-[#00FF88]/25 text-[#00FF88]"
+                    ? "bg-emerald-500/10 border border-emerald-500/25 text-emerald-300"
                     : "text-slate-400 hover:bg-white/5 hover:text-slate-300"
                 }`}
               >
@@ -187,7 +187,7 @@ export function SatelliteViewer() {
         </div>
 
         {/* Date selector */}
-        <div className="p-4 border-b border-[#00FF88]/10">
+        <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" />
             {t("satellite.acquisitionDate")}
@@ -215,7 +215,7 @@ export function SatelliteViewer() {
                 key={d.label}
                 onClick={() => setSelectedDate(i)}
                 className={`w-full flex items-center justify-between px-3 py-1.5 rounded text-xs transition-all ${
-                  selectedDate === i ? "bg-[#00FF88]/12 text-[#00FF88]" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                  selectedDate === i ? "bg-emerald-500/10 text-emerald-300" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
                 }`}
               >
                 <span>{d.label}</span>
@@ -226,7 +226,7 @@ export function SatelliteViewer() {
         </div>
 
         {/* Satellite source */}
-        <div className="p-4 border-b border-[#00FF88]/10">
+        <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("satellite.source")}</div>
           <div className="flex flex-wrap gap-2">
             {satellites.map((s, i) => (
@@ -246,7 +246,7 @@ export function SatelliteViewer() {
         </div>
 
         {/* Band selector */}
-        <div className="p-4 border-b border-[#00FF88]/10">
+        <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Layers className="w-3.5 h-3.5" />
             {t("satellite.bandComposite")}
@@ -280,9 +280,9 @@ export function SatelliteViewer() {
               <span className="text-xs text-slate-400">{t("satellite.ndviOverlay")}</span>
               <button
                 onClick={() => setNdviActive(!ndviActive)}
-                className={`relative w-9 h-5 rounded-full transition-colors ${ndviActive ? "bg-[#00FF88]" : "bg-slate-700"}`}
+                className={`relative w-9 h-5 rounded-full transition-colors ${ndviActive ? "bg-emerald-500" : "bg-slate-700"}`}
               >
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-[#0a0e15] transition-transform ${ndviActive ? "translate-x-4" : ""}`} />
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-[#052e16] transition-transform ${ndviActive ? "translate-x-4" : ""}`} />
               </button>
             </div>
             <div>
@@ -297,7 +297,7 @@ export function SatelliteViewer() {
                 step={0.05}
                 value={ndviOpacity}
                 onChange={(e) => setNdviOpacity(Number(e.target.value))}
-                className="w-full accent-[#00FF88] h-1.5"
+                className="w-full accent-emerald-500 h-1.5"
               />
             </div>
           </div>
@@ -307,7 +307,7 @@ export function SatelliteViewer() {
       {/* Main viewer */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Viewer toolbar */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-[#1A1F2B]/90 border-b border-[#00FF88]/10">
+        <div className="flex items-center gap-2 px-4 py-2 bg-[#111113]/90 border-b border-zinc-800">
           <div className="text-sm text-slate-300">{currentSite.name}</div>
           <span className="text-slate-700">-</span>
           <div className="text-xs text-slate-500">{currentDate.label}</div>
@@ -334,7 +334,7 @@ export function SatelliteViewer() {
             </button>
             <button
               onClick={() => setShowInfo(!showInfo)}
-              className={`p-1.5 rounded transition-colors ${showInfo ? "bg-[#00FF88]/15 text-[#00FF88]" : "text-slate-400 hover:text-slate-200 hover:bg-white/10"}`}
+              className={`p-1.5 rounded transition-colors ${showInfo ? "bg-emerald-500/15 text-emerald-300" : "text-slate-400 hover:text-slate-200 hover:bg-white/10"}`}
             >
               <Info className="w-4 h-4" />
             </button>
@@ -389,12 +389,12 @@ export function SatelliteViewer() {
                 className="absolute pointer-events-none"
                 style={{ left: crosshair.x + 12, top: crosshair.y + 12 }}
               >
-                <div className="bg-[#1A1F2B]/90 border border-[#00FF88]/30 rounded-lg p-2 text-xs text-slate-200 whitespace-nowrap">
+                <div className="bg-[#111113]/90 border border-emerald-500/30 rounded-lg p-2 text-xs text-slate-200 whitespace-nowrap">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <Crosshair className="w-3 h-3 text-[#00FF88]" />
-                    <span className="text-[#00FF88]">{t("satellite.pixelProbe")}</span>
+                    <Crosshair className="w-3 h-3 text-emerald-300" />
+                    <span className="text-emerald-300">{t("satellite.pixelProbe")}</span>
                   </div>
-                  <div>{t("common.ndvi")}: <span className="text-[#00FF88]">{crosshair.ndvi.toFixed(3)}</span></div>
+                  <div>{t("common.ndvi")}: <span className="text-emerald-300">{crosshair.ndvi.toFixed(3)}</span></div>
                   <div>{currentSite.coords}</div>
                 </div>
               </div>
@@ -420,7 +420,7 @@ export function SatelliteViewer() {
 
         {/* Info panel */}
         {showInfo && (
-          <div className="bg-[#1A1F2B]/95 border-t border-[#00FF88]/10 p-4">
+          <div className="bg-[#111113]/95 border-t border-zinc-800 p-4">
             <div className="grid grid-cols-4 gap-4 text-xs">
               <div>
                 <div className="text-slate-500">{t("satellite.siteArea")}</div>
@@ -428,7 +428,7 @@ export function SatelliteViewer() {
               </div>
               <div>
                 <div className="text-slate-500">{t("satellite.meanNdvi")}</div>
-                <div className="text-[#00FF88] mt-0.5">{currentNdvi.toFixed(3)}</div>
+                <div className="text-emerald-300 mt-0.5">{currentNdvi.toFixed(3)}</div>
               </div>
               <div>
                 <div className="text-slate-500">{t("satellite.acquisition")}</div>
@@ -443,7 +443,7 @@ export function SatelliteViewer() {
         )}
 
         {/* NDVI Legend at bottom */}
-        <div className="px-4 py-3 bg-[#13171F] border-t border-[#00FF88]/10">
+        <div className="px-4 py-3 bg-[#09090b] border-t border-zinc-800">
           <NDVILegend title={t("satellite.ndviScale")} />
         </div>
       </div>

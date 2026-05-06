@@ -1,4 +1,4 @@
-export const dateRange = [
+﻿export const dateRange = [
   { label: "May 2025", ndvi: 0.65 },
   { label: "Apr 2025", ndvi: 0.62 },
   { label: "Mar 2025", ndvi: 0.58 },
@@ -32,5 +32,5 @@ export const ndviLegendStops = [
   { value: "0.4", color: "#9ACD32" },
   { value: "0.5", color: "#32CD32" },
   { value: "0.6", color: "#00CC66" },
-  { value: "0.7+", color: "#00FF88" },
+  { value: "0.7+", color: "#22c55e" },
 ];

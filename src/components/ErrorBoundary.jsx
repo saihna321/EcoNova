@@ -1,4 +1,4 @@
-import { Component } from "react";
+﻿import { Component } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { translate } from "../i18n";
 
@@ -36,8 +36,8 @@ export class ErrorBoundary extends Component {
     const t = (key, vars) => translate(getStoredLanguage(), key, vars);
 
     return (
-      <div className="min-h-screen bg-[#13171F] text-slate-100 flex items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-xl border border-red-500/25 bg-[#1A1F2B] p-6 shadow-2xl">
+      <div className="min-h-screen bg-[#09090b] text-slate-100 flex items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-lg border border-red-500/25 bg-[#111113] p-6 shadow-2xl">
           <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center mb-4">
             <AlertTriangle className="w-5 h-5" />
           </div>
@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component {
           <div className="mt-5 flex gap-3">
             <button
               onClick={this.reset}
-              className="flex items-center gap-2 rounded-lg border border-[#00FF88]/25 bg-[#00FF88]/15 px-4 py-2 text-sm text-[#00FF88]"
+              className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-4 py-2 text-sm text-emerald-300"
             >
               <RefreshCw className="w-4 h-4" />
               {t("error.tryAgain")}

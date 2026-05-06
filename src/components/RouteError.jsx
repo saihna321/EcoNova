@@ -1,4 +1,4 @@
-import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+﻿import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import { Link, isRouteErrorResponse, useRouteError } from "react-router";
 import { useLanguage } from "../i18n";
 
@@ -31,8 +31,8 @@ export function RouteError() {
   console.error("Route error", error);
 
   return (
-    <div className="min-h-full bg-[#13171F] text-slate-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg rounded-xl border border-red-500/25 bg-[#1A1F2B] p-6">
+    <div className="min-h-full bg-[#09090b] text-slate-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-lg rounded-lg border border-red-500/25 bg-[#111113] p-6">
         <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center mb-4">
           <AlertTriangle className="w-5 h-5" />
         </div>
@@ -41,7 +41,7 @@ export function RouteError() {
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             onClick={() => window.location.reload()}
-            className="flex items-center gap-2 rounded-lg border border-[#00FF88]/25 bg-[#00FF88]/15 px-4 py-2 text-sm text-[#00FF88]"
+            className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-4 py-2 text-sm text-emerald-300"
           >
             <RefreshCw className="w-4 h-4" />
             {t("error.retry")}
@@ -63,16 +63,16 @@ export function NotFound() {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-full bg-[#13171F] text-slate-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-[#00FF88]/15 bg-[#1A1F2B] p-6 text-center">
-        <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[#00FF88]/10 text-[#00FF88]">
+    <div className="min-h-full bg-[#09090b] text-slate-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-lg border border-zinc-800 bg-[#111113] p-6 text-center">
+        <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-300">
           404
         </div>
         <h1 className="text-slate-100">{t("error.notFound")}</h1>
         <p className="mt-2 text-sm text-slate-500">{t("error.notFoundMessage")}</p>
         <Link
           to="/"
-          className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#00FF88]/25 bg-[#00FF88]/15 px-4 py-2 text-sm text-[#00FF88]"
+          className="mt-5 inline-flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-4 py-2 text-sm text-emerald-300"
         >
           <Home className="w-4 h-4" />
           {t("error.backDashboard")}

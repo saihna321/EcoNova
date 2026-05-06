@@ -1,4 +1,4 @@
-export const demoAlerts = [
+﻿export const demoAlerts = [
   {
     id: 1,
     severity: "warning",

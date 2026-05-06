@@ -1,4 +1,4 @@
-export const siteImages = [
+﻿export const siteImages = [
   "https://images.unsplash.com/photo-1570979872224-a1ea9f1248b0?w=400&q=80",
   "https://images.unsplash.com/photo-1776012203102-a024822685cc?w=400&q=80",
   "https://images.unsplash.com/photo-1686011872096-4010d5203166?w=400&q=80",

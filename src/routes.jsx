@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+﻿import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./components/Dashboard";
 import { SatelliteViewer } from "./components/SatelliteViewer";

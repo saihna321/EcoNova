@@ -1,4 +1,4 @@
-export const dashboardKpis = [
+﻿export const dashboardKpis = [
   {
     labelKey: "dashboard.vegetationHealth",
     value: "65%",
@@ -127,7 +127,7 @@ export const annualProgress = [
 ];
 
 export const siteColors = {
-  kalN: "#00FF88",
+  kalN: "#22c55e",
   pilW: "#3b82f6",
   mtI: "#a855f7",
   hunV: "#f59e0b",
