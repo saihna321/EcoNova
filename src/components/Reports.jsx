@@ -19,87 +19,13 @@ import {
   Legend,
 } from "recharts";
 import { useLanguage } from "../i18n";
-
-const quarterlyNdvi = [
-  { q: "Q2 2022", kalN: 0.18, pilW: 0.12, mtI: 0.25, hunV: 0.14, bowB: 0.09 },
-  { q: "Q3 2022", kalN: 0.21, pilW: 0.14, mtI: 0.28, hunV: 0.17, bowB: 0.11 },
-  { q: "Q4 2022", kalN: 0.24, pilW: 0.17, mtI: 0.32, hunV: 0.20, bowB: 0.12 },
-  { q: "Q1 2023", kalN: 0.28, pilW: 0.19, mtI: 0.37, hunV: 0.23, bowB: 0.13 },
-  { q: "Q2 2023", kalN: 0.31, pilW: 0.22, mtI: 0.41, hunV: 0.26, bowB: 0.15 },
-  { q: "Q3 2023", kalN: 0.35, pilW: 0.25, mtI: 0.46, hunV: 0.30, bowB: 0.18 },
-  { q: "Q4 2023", kalN: 0.38, pilW: 0.27, mtI: 0.50, hunV: 0.33, bowB: 0.20 },
-  { q: "Q1 2024", kalN: 0.41, pilW: 0.30, mtI: 0.53, hunV: 0.36, bowB: 0.22 },
-  { q: "Q2 2024", kalN: 0.44, pilW: 0.32, mtI: 0.56, hunV: 0.39, bowB: 0.24 },
-  { q: "Q3 2024", kalN: 0.47, pilW: 0.34, mtI: 0.58, hunV: 0.41, bowB: 0.26 },
-  { q: "Q4 2024", kalN: 0.49, pilW: 0.36, mtI: 0.60, hunV: 0.42, bowB: 0.27 },
-  { q: "Q1 2025", kalN: 0.52, pilW: 0.38, mtI: 0.61, hunV: 0.44, bowB: 0.29 },
-];
-
-const annualProgress = [
-  { year: "2022", completed: 8, ongoing: 4, notStarted: 10 },
-  { year: "2023", completed: 14, ongoing: 8, notStarted: 7 },
-  { year: "2024", completed: 18, ongoing: 10, notStarted: 4 },
-  { year: "2025", completed: 22, ongoing: 12, notStarted: 2 },
-];
-
-const siteColors = {
-  kalN: "#00FF88",
-  pilW: "#3b82f6",
-  mtI: "#a855f7",
-  hunV: "#f59e0b",
-  bowB: "#ef4444",
-};
-
-const siteLabels = {
-  kalN: "Kalgoorlie N",
-  pilW: "Pilbara W",
-  mtI: "Mt Isa C",
-  hunV: "Hunter V",
-  bowB: "Bowen B S3",
-};
-
-const reports = [
-  {
-    id: 1,
-    title: "Q1 2025 Rehabilitation Progress Report",
-    date: "1 Apr 2025",
-    type: "Quarterly",
-    sites: 5,
-    status: "Final",
-  },
-  {
-    id: 2,
-    title: "Annual NDVI Assessment 2024",
-    date: "31 Dec 2024",
-    type: "Annual",
-    sites: 5,
-    status: "Final",
-  },
-  {
-    id: 3,
-    title: "Q4 2024 Compliance Report",
-    date: "1 Jan 2025",
-    type: "Compliance",
-    sites: 5,
-    status: "Final",
-  },
-  {
-    id: 4,
-    title: "Bowen Basin S3 – Intervention Required",
-    date: "15 Mar 2025",
-    type: "Alert",
-    sites: 1,
-    status: "Action Required",
-  },
-  {
-    id: 5,
-    title: "Sentinel-2 Mosaic — April 2025",
-    date: "30 Apr 2025",
-    type: "Imagery",
-    sites: 5,
-    status: "Processing",
-  },
-];
+import {
+  annualProgress,
+  quarterlyNdvi,
+  siteColors,
+  siteLabels,
+} from "../data/demoNdviData";
+import { demoReports } from "../data/demoReports";
 
 function reportStatusStyle(s) {
   if (s === "Final") return "text-emerald-400 bg-emerald-400/10 border-emerald-500/30";
@@ -262,7 +188,7 @@ export function Reports() {
             <button className="text-xs text-[#00FF88] hover:text-[#00cc6e]">{t("common.viewAll")}</button>
           </div>
           <div className="space-y-2">
-            {reports.map((r) => (
+            {demoReports.map((r) => (
               <div
                 key={r.id}
                 className="flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-[#00FF88]/15 hover:bg-white/3 transition-all cursor-pointer"

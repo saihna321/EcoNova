@@ -22,79 +22,18 @@ import {
   Activity,
   ArrowUpRight,
   ArrowDownRight,
-  Layers,
   RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useLanguage } from "../i18n";
-
-const ndviTrend = [
-  { month: "Jun '24", ndvi: 0.21, baseline: 0.18 },
-  { month: "Jul '24", ndvi: 0.23, baseline: 0.18 },
-  { month: "Aug '24", ndvi: 0.25, baseline: 0.18 },
-  { month: "Sep '24", ndvi: 0.28, baseline: 0.18 },
-  { month: "Oct '24", ndvi: 0.32, baseline: 0.18 },
-  { month: "Nov '24", ndvi: 0.35, baseline: 0.18 },
-  { month: "Dec '24", ndvi: 0.38, baseline: 0.18 },
-  { month: "Jan '25", ndvi: 0.36, baseline: 0.18 },
-  { month: "Feb '25", ndvi: 0.40, baseline: 0.18 },
-  { month: "Mar '25", ndvi: 0.43, baseline: 0.18 },
-  { month: "Apr '25", ndvi: 0.46, baseline: 0.18 },
-  { month: "May '25", ndvi: 0.48, baseline: 0.18 },
-];
-
-const siteProgress = [
-  { site: "Kalgoorlie North", ndvi: 0.52, target: 0.60, area: 124, status: "on-track" },
-  { site: "Pilbara West", ndvi: 0.38, target: 0.55, area: 287, status: "at-risk" },
-  { site: "Mount Isa Central", ndvi: 0.61, target: 0.60, area: 95, status: "achieved" },
-  { site: "Hunter Valley", ndvi: 0.44, target: 0.50, area: 212, status: "on-track" },
-  { site: "Bowen Basin S3", ndvi: 0.29, target: 0.55, area: 341, status: "critical" },
-];
-
-const radarData = [
-  { metric: "Vegetation Cover", value: 72 },
-  { metric: "Soil Stability", value: 68 },
-  { metric: "Species Diversity", value: 55 },
-  { metric: "Canopy Height", value: 48 },
-  { metric: "Water Retention", value: 63 },
-  { metric: "Carbon Seq.", value: 41 },
-];
-
-const recentImagery = [
-  {
-    id: 1,
-    site: "Kalgoorlie North",
-    date: "May 3, 2025",
-    satellite: "Sentinel-2",
-    ndvi: 0.52,
-    url: "https://images.unsplash.com/photo-1570979872224-a1ea9f1248b0?w=400&q=80",
-  },
-  {
-    id: 2,
-    site: "Pilbara West",
-    date: "May 2, 2025",
-    satellite: "Landsat-8",
-    ndvi: 0.38,
-    url: "https://images.unsplash.com/photo-1776012203102-a024822685cc?w=400&q=80",
-  },
-  {
-    id: 3,
-    site: "Mount Isa Central",
-    date: "May 1, 2025",
-    satellite: "Sentinel-2",
-    ndvi: 0.61,
-    url: "https://images.unsplash.com/photo-1686011872096-4010d5203166?w=400&q=80",
-  },
-  {
-    id: 4,
-    site: "Hunter Valley",
-    date: "Apr 30, 2025",
-    satellite: "MODIS",
-    ndvi: 0.44,
-    url: "https://images.unsplash.com/photo-1661619135472-4c85cdb3dc90?w=400&q=80",
-  },
-];
+import {
+  dashboardKpis,
+  ndviTrend,
+  radarData,
+  recentImagery,
+  siteProgress,
+} from "../data/demoNdviData";
 
 function ndviColor(value) {
   if (value >= 0.6) return "#00FF88";
@@ -114,45 +53,6 @@ function statusColor(status) {
   }
 }
 
-const kpis = [
-  {
-    label: "Average NDVI",
-    value: "0.48",
-    change: "+0.06",
-    positive: true,
-    icon: Leaf,
-    sub: "vs. last quarter",
-    color: "mint",
-  },
-  {
-    label: "Rehab Progress",
-    value: "68.4%",
-    change: "+3.2%",
-    positive: true,
-    icon: Activity,
-    sub: "of target achieved",
-    color: "blue",
-  },
-  {
-    label: "Active Sites",
-    value: "12",
-    change: "+2",
-    positive: true,
-    icon: MapPin,
-    sub: "3 sites monitored",
-    color: "violet",
-  },
-  {
-    label: "Critical Alerts",
-    value: "3",
-    change: "-1",
-    positive: true,
-    icon: AlertTriangle,
-    sub: "requires action",
-    color: "red",
-  },
-];
-
 const colorMap = {
   mint: "bg-[#00FF88]/10 border-[#00FF88]/20 text-[#00FF88]",
   blue: "bg-blue-500/10 border-blue-500/20 text-blue-400",
@@ -167,21 +67,30 @@ const iconBgMap = {
   red: "bg-red-500/20 text-red-400",
 };
 
+const iconByKey = {
+  activity: Activity,
+  alertTriangle: AlertTriangle,
+  leaf: Leaf,
+  mapPin: MapPin,
+};
+
 export function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const { t } = useLanguage();
 
-  const localizedKpis = [
-    { ...kpis[0], label: t("dashboard.averageNdvi"), sub: t("dashboard.vsLastQuarter") },
-    { ...kpis[1], label: t("dashboard.rehabProgress"), sub: t("dashboard.ofTarget") },
-    { ...kpis[2], label: t("dashboard.activeSites"), sub: t("dashboard.monitoredSites") },
-    { ...kpis[3], label: t("dashboard.criticalAlerts"), sub: t("dashboard.requiresAction") },
-  ];
+  const localizedKpis = dashboardKpis.map((kpi) => ({
+    ...kpi,
+    icon: iconByKey[kpi.iconKey] ?? Activity,
+    label: t(kpi.labelKey),
+    sub: t(kpi.subKey),
+  }));
 
   const handleRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1500);
   };
+
+  const mainMapImage = recentImagery[0];
 
   return (
     <div className="p-6 space-y-6">
@@ -213,8 +122,9 @@ export function Dashboard() {
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBgMap[kpi.color]}`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <div className={`flex items-center gap-1 text-xs ${kpi.positive ? "text-[#00FF88]" : "text-red-400"}`}>
-                  {kpi.positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                <div className={`flex items-center gap-1 text-xs ${kpi.positive === false ? "text-red-400" : "text-[#00FF88]"}`}>
+                  {kpi.positive === true && <ArrowUpRight className="w-3 h-3" />}
+                  {kpi.positive === false && <ArrowDownRight className="w-3 h-3" />}
                   {kpi.change}
                 </div>
               </div>
@@ -226,6 +136,65 @@ export function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Primary NDVI map */}
+      <div className="rounded-xl bg-[#1A1F2B] border border-[#00FF88]/12 overflow-hidden">
+        <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-[#00FF88]/10">
+          <div>
+            <h3 className="text-slate-200">{t("dashboard.ndviMap")}</h3>
+            <p className="text-xs text-slate-500 mt-0.5">{t("dashboard.ndviMapSub")}</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 rounded-lg border border-[#00FF88]/20 bg-[#00FF88]/8 px-3 py-1.5 text-xs text-[#00FF88]">
+            <span className="h-2 w-2 rounded-full bg-[#00FF88]" />
+            Sentinel-2
+          </div>
+        </div>
+        <div className="relative h-[420px] min-h-[360px] overflow-hidden bg-[#0d1117]">
+          <ImageWithFallback
+            src={mainMapImage.url}
+            alt={mainMapImage.site}
+            className="h-full w-full object-cover"
+          />
+          <div
+            className="absolute inset-0 mix-blend-multiply opacity-70"
+            style={{
+              background:
+                "radial-gradient(circle at 30% 35%, rgba(0,255,136,0.68), transparent 28%), radial-gradient(circle at 68% 46%, rgba(132,204,22,0.58), transparent 26%), radial-gradient(circle at 52% 72%, rgba(234,179,8,0.44), transparent 24%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-20"
+            style={{
+              backgroundImage: "linear-gradient(rgba(34,197,94,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(34,197,94,0.28) 1px, transparent 1px)",
+              backgroundSize: "96px 96px",
+            }}
+          />
+          <div className="absolute left-5 top-5 rounded-lg border border-black/20 bg-black/55 px-4 py-3 backdrop-blur">
+            <div className="text-xs text-slate-400">{mainMapImage.site}</div>
+            <div className="mt-1 text-3xl text-[#00FF88]">{mainMapImage.ndvi.toFixed(2)}</div>
+            <div className="text-xs text-slate-300">{t("common.ndvi")}</div>
+          </div>
+          <div className="absolute bottom-5 left-5 right-5">
+            <div className="rounded-lg border border-white/10 bg-black/55 p-3 backdrop-blur">
+              <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+                <span>{t("dashboard.timeline")}</span>
+                <span>{mainMapImage.date}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                defaultValue={86}
+                className="w-full accent-[#00FF88]"
+                aria-label={t("dashboard.timeline")}
+              />
+            </div>
+          </div>
+          <div className="absolute bottom-24 right-5 rounded-lg border border-white/10 bg-black/55 px-3 py-2 text-xs text-slate-300 backdrop-blur">
+            {t("dashboard.sentinelOnly")}
+          </div>
+        </div>
       </div>
 
       {/* Main grid */}
@@ -368,57 +337,6 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Satellite Imagery */}
-      <div className="rounded-xl bg-[#1A1F2B] border border-[#00FF88]/12 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-slate-200">{t("dashboard.recentImagery")}</h3>
-            <p className="text-xs text-slate-500">{t("dashboard.recentImagerySub")}</p>
-          </div>
-          <Link to="/satellite" className="flex items-center gap-1.5 text-xs text-[#00FF88] hover:text-[#00cc6e] transition-colors">
-            <Layers className="w-3.5 h-3.5" />
-            {t("dashboard.openViewer")} -&gt;
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {recentImagery.map((img) => (
-            <div key={img.id} className="rounded-lg overflow-hidden border border-[#00FF88]/10 group cursor-pointer">
-              <div className="relative h-32 overflow-hidden">
-                <ImageWithFallback
-                  src={img.url}
-                  alt={img.site}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div
-                  className="absolute inset-0 mix-blend-multiply opacity-40 group-hover:opacity-20 transition-opacity"
-                  style={{
-                    background: `linear-gradient(135deg, ${ndviColor(img.ndvi)}88, transparent)`,
-                  }}
-                />
-                <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-xs bg-black/60 text-slate-200">
-                  {img.satellite}
-                </div>
-                <div
-                  className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-xs text-black font-semibold"
-                  style={{ backgroundColor: ndviColor(img.ndvi) + "dd" }}
-                >
-                  {img.ndvi.toFixed(2)}
-                </div>
-              </div>
-              <div className="p-3 bg-[#1F2535]">
-                <div className="text-sm text-slate-300 truncate">{img.site}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{img.date}</div>
-                <div className="mt-2 h-1.5 bg-[#252D3D] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${img.ndvi * 100}%`, backgroundColor: ndviColor(img.ndvi) }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

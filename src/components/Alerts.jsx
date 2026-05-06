@@ -15,103 +15,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
-
-const allAlerts = [
-  {
-    id: 1,
-    severity: "critical",
-    title: "NDVI Decline — Significant Vegetation Loss Detected",
-    site: "Bowen Basin S3",
-    region: "Queensland",
-    description: "NDVI has dropped by 0.08 over 2 weeks, indicating significant stress event. Immediate field inspection recommended. Possible drought stress or erosion event.",
-    timestamp: "Today, 08:14 AEST",
-    ndviChange: -0.08,
-    cause: "Drought stress / erosion",
-    acknowledged: false,
-    category: "NDVI",
-  },
-  {
-    id: 2,
-    severity: "critical",
-    title: "Compliance Deadline Approaching — 45 Days",
-    site: "Bowen Basin S3",
-    region: "Queensland",
-    description: "Site is currently tracking 23% below required NDVI threshold for regulatory compliance. Without intervention, the June 2025 milestone will be missed.",
-    timestamp: "Yesterday, 14:00 AEST",
-    acknowledged: false,
-    category: "Compliance",
-  },
-  {
-    id: 3,
-    severity: "warning",
-    title: "Satellite Imagery Quality — Cloud Cover > 80%",
-    site: "Pilbara West",
-    region: "Western Australia",
-    description: "Latest Sentinel-2 acquisition on 2 May had >80% cloud contamination. NDVI values for this period are unreliable. Next clear acquisition estimated in 5 days.",
-    timestamp: "Today, 06:42 AEST",
-    acknowledged: false,
-    category: "Data Quality",
-  },
-  {
-    id: 4,
-    severity: "warning",
-    title: "NDVI Growth Plateau — Stagnation Over 6 Weeks",
-    site: "Pilbara West",
-    region: "Western Australia",
-    description: "NDVI has not increased for 6 consecutive weeks. Current value of 0.38 is below the quarterly growth trajectory. Site assessment recommended.",
-    timestamp: "3 May 2025",
-    ndviChange: 0.0,
-    acknowledged: true,
-    category: "NDVI",
-  },
-  {
-    id: 5,
-    severity: "warning",
-    title: "Extreme Heat Event — Vegetation Stress Risk",
-    site: "Kalgoorlie North",
-    region: "Western Australia",
-    description: "BOM forecast indicates temperatures exceeding 42°C for the next 5 days. Risk of heat-induced vegetation stress. Monitor NDVI closely.",
-    timestamp: "4 May 2025",
-    cause: "Extreme heat",
-    acknowledged: false,
-    category: "Weather",
-  },
-  {
-    id: 6,
-    severity: "info",
-    title: "New Sentinel-2 Mosaic Available",
-    site: "All Sites",
-    region: "National",
-    description: "Sentinel-2 Level-2A mosaic for April 2025 is now available. Processing complete with 94% valid pixels. NDVI analysis updated.",
-    timestamp: "30 Apr 2025",
-    acknowledged: true,
-    category: "Data",
-  },
-  {
-    id: 7,
-    severity: "info",
-    title: "Rainfall Event — Potential NDVI Increase",
-    site: "Hunter Valley",
-    region: "New South Wales",
-    description: "78mm of rainfall recorded on 29 Apr. Expected NDVI increase in next 2–3 week acquisition window. Positive signal for Q2 targets.",
-    timestamp: "29 Apr 2025",
-    ndviChange: +0.04,
-    acknowledged: true,
-    category: "Weather",
-  },
-  {
-    id: 8,
-    severity: "resolved",
-    title: "Target NDVI Achieved — Site Milestone",
-    site: "Mount Isa Central",
-    region: "Queensland",
-    description: "NDVI has reached and exceeded the 0.60 rehabilitation target. Site milestone achieved 3 months ahead of schedule. Certificate of rehabilitation triggered.",
-    timestamp: "28 Apr 2025",
-    ndviChange: +0.03,
-    acknowledged: true,
-    category: "Milestone",
-  },
-];
+import { demoAlerts } from "../data/demoAlerts";
 
 const severityConfig = {
   critical: {
@@ -170,7 +74,7 @@ function severitySummaryKey(severity) {
 
 export function Alerts() {
   const [filter, setFilter] = useState("all");
-  const [alerts, setAlerts] = useState(allAlerts);
+  const [alerts, setAlerts] = useState(demoAlerts);
   const [expandedId, setExpandedId] = useState(null);
   const { t } = useLanguage();
 

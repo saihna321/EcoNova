@@ -5,7 +5,6 @@ import {
   Mountain,
   FileBarChart2,
   Bell,
-  Satellite,
   ChevronLeft,
   ChevronRight,
   Leaf,
@@ -18,10 +17,9 @@ import { useLanguage } from "../i18n";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, labelKey: "nav.dashboard" },
-  { to: "/satellite", icon: Satellite, labelKey: "nav.satellite" },
   { to: "/sites", icon: Mountain, labelKey: "nav.sites" },
   { to: "/reports", icon: FileBarChart2, labelKey: "nav.reports" },
-  { to: "/alerts", icon: Bell, labelKey: "nav.alerts", badge: 3 },
+  { to: "/alerts", icon: Bell, labelKey: "nav.alerts" },
 ];
 
 export function Layout() {
@@ -61,7 +59,7 @@ export function Layout() {
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <div className="text-[#00FF88] text-sm font-semibold whitespace-nowrap">RehabMonitor</div>
+              <div className="text-[#00FF88] text-sm font-semibold whitespace-nowrap">EcoNova</div>
               <div className="text-slate-500 text-xs whitespace-nowrap">{t("common.platform")}</div>
             </div>
           )}
@@ -165,7 +163,7 @@ export function Layout() {
           <div>
             <h1 className="text-slate-100">{currentPage ? t(currentPage.labelKey) : t("nav.dashboard")}</h1>
             <p className="text-xs text-slate-500">
-              Sentinel-2 / Landsat-8 / MODIS / {new Date().toLocaleDateString(dateLocale, { dateStyle: "long" })}
+              Sentinel-2 / Sentinel Hub / {new Date().toLocaleDateString(dateLocale, { dateStyle: "long" })}
             </p>
           </div>
 
@@ -195,7 +193,7 @@ export function Layout() {
 
             <button className="relative p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#00FF88] rounded-full" />
             </button>
 
             <button className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5">

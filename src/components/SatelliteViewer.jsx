@@ -14,59 +14,21 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useLanguage } from "../i18n";
-
-const sites = [
-  { id: "kal-n", name: "Kalgoorlie North", coords: "30°44'S 121°28'E", area: 124 },
-  { id: "pil-w", name: "Pilbara West", coords: "21°10'S 117°12'E", area: 287 },
-  { id: "mti", name: "Mount Isa Central", coords: "20°44'S 139°30'E", area: 95 },
-  { id: "hun", name: "Hunter Valley", coords: "32°30'S 150°55'E", area: 212 },
-  { id: "bow", name: "Bowen Basin S3", coords: "22°30'S 148°45'E", area: 341 },
-];
-
-const dateRange = [
-  { label: "May 2025", ndvi: 0.48 },
-  { label: "Apr 2025", ndvi: 0.46 },
-  { label: "Mar 2025", ndvi: 0.43 },
-  { label: "Feb 2025", ndvi: 0.40 },
-  { label: "Jan 2025", ndvi: 0.36 },
-  { label: "Dec 2024", ndvi: 0.38 },
-  { label: "Nov 2024", ndvi: 0.35 },
-  { label: "Oct 2024", ndvi: 0.32 },
-];
-
-const bandOptions = [
-  { id: "ndvi", label: "NDVI", description: "Vegetation Index" },
-  { id: "rgb", label: "True Color", description: "RGB Composite" },
-  { id: "false", label: "False Color", description: "NIR/Red/Green" },
-  { id: "swir", label: "SWIR", description: "Shortwave Infrared" },
-];
-
-const satellites = ["Sentinel-2", "Landsat-8", "MODIS"];
-
-const imageUrls = [
-  "https://images.unsplash.com/photo-1570979872224-a1ea9f1248b0?w=1080&q=80",
-  "https://images.unsplash.com/photo-1776012203102-a024822685cc?w=1080&q=80",
-  "https://images.unsplash.com/photo-1686011872096-4010d5203166?w=1080&q=80",
-  "https://images.unsplash.com/photo-1661619135472-4c85cdb3dc90?w=1080&q=80",
-];
+import { demoSites } from "../data/demoSites";
+import {
+  bandOptions,
+  dateRange,
+  imageUrls,
+  ndviLegendStops,
+  satellites,
+} from "../data/demoSatelliteData";
 
 function NDVILegend({ title }) {
-  const stops = [
-    { value: "< 0", color: "#1a1a7a", label: "Water" },
-    { value: "0.0", color: "#8B0000" },
-    { value: "0.1", color: "#FF4500" },
-    { value: "0.2", color: "#FF8C00" },
-    { value: "0.3", color: "#FFD700" },
-    { value: "0.4", color: "#9ACD32" },
-    { value: "0.5", color: "#32CD32" },
-    { value: "0.6", color: "#00CC66" },
-    { value: "0.7+", color: "#00FF88" },
-  ];
   return (
     <div className="rounded-lg bg-[#1A1F2B]/90 border border-[#00FF88]/15 p-3">
       <div className="text-xs text-slate-400 mb-2">{title}</div>
       <div className="flex gap-0.5">
-        {stops.map((s) => (
+        {ndviLegendStops.map((s) => (
           <div key={s.value} className="flex flex-col items-center gap-1">
             <div className="w-6 h-4 rounded-sm" style={{ backgroundColor: s.color }} />
             <span className="text-[10px] text-slate-500 whitespace-nowrap">{s.value}</span>
@@ -156,7 +118,7 @@ export function SatelliteViewer() {
   const [crosshair, setCrosshair] = useState(null);
   const { t } = useLanguage();
   const viewerRef = useRef(null);
-  const currentSite = sites[selectedSite] ?? sites[0];
+  const currentSite = demoSites[selectedSite] ?? demoSites[0];
   const currentDate = dateRange[selectedDate] ?? dateRange[0];
   const currentSatellite = satellites[selectedSatellite] ?? satellites[0];
   const imgIdx = selectedSite % imageUrls.length;
@@ -166,12 +128,9 @@ export function SatelliteViewer() {
   const localizedBandOptions = bandOptions.map((band) => ({
     ...band,
     label: band.id === "ndvi" ? t("common.ndvi") :
-      band.id === "rgb" ? t("satellite.trueColor") :
-      band.id === "false" ? t("satellite.falseColor") : band.label,
+      band.id === "rgb" ? t("satellite.trueColor") : band.label,
     description: band.id === "ndvi" ? t("satellite.vegetationIndex") :
-      band.id === "rgb" ? t("satellite.rgbComposite") :
-      band.id === "false" ? t("satellite.falseDescription") :
-      band.id === "swir" ? t("satellite.swirDescription") : band.description,
+      band.id === "rgb" ? t("satellite.rgbComposite") : band.description,
   }));
 
   const handleMouseDown = (e) => {
@@ -210,7 +169,7 @@ export function SatelliteViewer() {
         <div className="p-4 border-b border-[#00FF88]/10">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("satellite.mineSite")}</div>
           <div className="space-y-1">
-            {sites.map((site, i) => (
+            {demoSites.map((site, i) => (
               <button
                 key={site.id}
                 onClick={() => setSelectedSite(i)}
@@ -221,7 +180,7 @@ export function SatelliteViewer() {
                 }`}
               >
                 <div className="text-sm">{site.name}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{site.coords} · {site.area} ha</div>
+                <div className="text-xs text-slate-500 mt-0.5">{site.coords} - {site.area} ha</div>
               </button>
             ))}
           </div>
@@ -296,7 +255,7 @@ export function SatelliteViewer() {
             {localizedBandOptions.map((band) => (
               <button
                 key={band.id}
-                onClick={() => { setSelectedBand(band.id); setNdviActive(band.id === "ndvi" || band.id === "false"); }}
+                onClick={() => { setSelectedBand(band.id); setNdviActive(band.id === "ndvi"); }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${
                   selectedBand === band.id
                     ? "bg-violet-500/15 border border-violet-500/30 text-violet-300"
@@ -350,9 +309,9 @@ export function SatelliteViewer() {
         {/* Viewer toolbar */}
         <div className="flex items-center gap-2 px-4 py-2 bg-[#1A1F2B]/90 border-b border-[#00FF88]/10">
           <div className="text-sm text-slate-300">{currentSite.name}</div>
-          <span className="text-slate-700">·</span>
+          <span className="text-slate-700">-</span>
           <div className="text-xs text-slate-500">{currentDate.label}</div>
-          <span className="text-slate-700">·</span>
+          <span className="text-slate-700">-</span>
           <div className="text-xs text-slate-500">{currentSatellite}</div>
           <div className="ml-auto flex items-center gap-2">
             <button
@@ -436,7 +395,7 @@ export function SatelliteViewer() {
                     <span className="text-[#00FF88]">{t("satellite.pixelProbe")}</span>
                   </div>
                   <div>{t("common.ndvi")}: <span className="text-[#00FF88]">{crosshair.ndvi.toFixed(3)}</span></div>
-                  <div>X: {Math.round(crosshair.x)} Y: {Math.round(crosshair.y)}</div>
+                  <div>{currentSite.coords}</div>
                 </div>
               </div>
             )}
@@ -477,7 +436,7 @@ export function SatelliteViewer() {
               </div>
               <div>
                 <div className="text-slate-500">{t("satellite.resolution")}</div>
-                <div className="text-slate-200 mt-0.5">10m × 10m</div>
+                <div className="text-slate-200 mt-0.5">10m x 10m</div>
               </div>
             </div>
           </div>

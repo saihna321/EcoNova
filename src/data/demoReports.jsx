@@ -1,0 +1,42 @@
+export const demoReports = [
+  {
+    id: 1,
+    title: "Oyu Tolgoi Q1 2025 Vegetation Health Report",
+    date: "1 Apr 2025",
+    type: "Quarterly",
+    sites: 5,
+    status: "Final",
+  },
+  {
+    id: 2,
+    title: "Mongolia Mine Rehabilitation NDVI Assessment 2024",
+    date: "31 Dec 2024",
+    type: "Annual",
+    sites: 5,
+    status: "Final",
+  },
+  {
+    id: 3,
+    title: "Tavan Tolgoi Q4 2024 ESG Compliance Report",
+    date: "1 Jan 2025",
+    type: "Compliance",
+    sites: 5,
+    status: "Final",
+  },
+  {
+    id: 4,
+    title: "Nariin Sukhait Zone B - Monitoring Required",
+    date: "15 Mar 2025",
+    type: "Alert",
+    sites: 1,
+    status: "Action Required",
+  },
+  {
+    id: 5,
+    title: "Sentinel-2 NDVI Mosaic - April 2025",
+    date: "30 Apr 2025",
+    type: "Imagery",
+    sites: 5,
+    status: "Processing",
+  },
+];
