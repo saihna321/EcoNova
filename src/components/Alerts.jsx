@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Clock,
   MapPin,
+  FileCheck2,
 } from "lucide-react";
 import { Button } from "./ui";
 import { useLanguage } from "../i18n";
@@ -59,7 +60,7 @@ const defaultSeverityConfig = {
 
 const categoryIcons = {
   NDVI: TrendingDown,
-  Compliance: AlertCircle,
+  "Report Data": FileCheck2,
   "Data Quality": Eye,
   Weather: CloudRain,
   Data: Bell,

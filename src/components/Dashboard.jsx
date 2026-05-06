@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import {
   AreaChart,
   Area,
@@ -10,10 +10,6 @@ import {
   BarChart,
   Bar,
   Cell,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
 } from "recharts";
 import {
   Leaf,
@@ -23,16 +19,18 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   RefreshCw,
+  FileCheck2,
 } from "lucide-react";
 import { Link } from "react-router";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { Badge, Button, Card, CardDescription, CardHeader, CardTitle } from "./ui";
+import { Button, Card } from "./ui";
 import { useLanguage } from "../i18n";
 import {
   dashboardKpis,
   ndviTrend,
-  radarData,
+  portfolioNdviClasses,
   recentImagery,
+  reportEvidence,
   siteProgress,
 } from "../data/demoNdviData";
 
@@ -52,6 +50,10 @@ function statusColor(status) {
     case "critical": return "text-red-400 bg-red-400/10 border-red-500/30";
     default: return "text-slate-400";
   }
+}
+
+function signed(value) {
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
 }
 
 const colorMap = {
@@ -78,6 +80,8 @@ const iconByKey = {
 export function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const { t } = useLanguage();
+  const mainImage = recentImagery[0];
+  const totalClassArea = portfolioNdviClasses.reduce((sum, item) => sum + item.area, 0);
 
   const localizedKpis = dashboardKpis.map((kpi) => ({
     ...kpi,
@@ -91,34 +95,24 @@ export function Dashboard() {
     setTimeout(() => setRefreshing(false), 1500);
   };
 
-  const mainMapImage = recentImagery[0];
-
   return (
     <div className="p-6 space-y-6">
-      {/* Header row */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-slate-200">{t("dashboard.overview")}</h2>
           <p className="text-sm text-slate-500 mt-0.5">{t("dashboard.overviewSub")}</p>
         </div>
-        <Button
-          onClick={handleRefresh}
-          variant="secondary"
-        >
+        <Button onClick={handleRefresh} variant="secondary">
           <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
           {t("dashboard.refresh")}
         </Button>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {localizedKpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <Card
-              key={kpi.label}
-              className={`p-5 ${colorMap[kpi.color]}`}
-            >
+            <Card key={kpi.label} className={`p-5 ${colorMap[kpi.color]}`}>
               <div className="flex items-start justify-between">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBgMap[kpi.color]}`}>
                   <Icon className="w-5 h-5" />
@@ -139,67 +133,76 @@ export function Dashboard() {
         })}
       </div>
 
-      {/* Primary NDVI map */}
-      <Card className="overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-          <div>
-            <CardTitle>{t("dashboard.ndviMap")}</CardTitle>
-            <CardDescription>{t("dashboard.ndviMapSub")}</CardDescription>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="xl:col-span-2 overflow-hidden">
+          <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+            <div>
+              <h3 className="text-slate-200">{t("dashboard.ndviMap")}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">{t("dashboard.ndviMapSub")}</p>
+            </div>
+            <Link to="/satellite" className="text-xs text-emerald-300 hover:text-emerald-200">
+              {t("dashboard.openViewer")} -&gt;
+            </Link>
           </div>
-          <Badge className="hidden sm:inline-flex">
-            Sentinel-2
-          </Badge>
-        </CardHeader>
-        <div className="relative h-[420px] min-h-[360px] overflow-hidden bg-[#0d1117]">
-          <ImageWithFallback
-            src={mainMapImage.url}
-            alt={mainMapImage.site}
-            className="h-full w-full object-cover"
-          />
-          <div
-            className="absolute inset-0 mix-blend-multiply opacity-70"
-            style={{
-              background:
-                "radial-gradient(circle at 30% 35%, rgba(34,197,94,0.68), transparent 28%), radial-gradient(circle at 68% 46%, rgba(132,204,22,0.58), transparent 26%), radial-gradient(circle at 52% 72%, rgba(234,179,8,0.44), transparent 24%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none opacity-20"
-            style={{
-              backgroundImage: "linear-gradient(rgba(34,197,94,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(34,197,94,0.28) 1px, transparent 1px)",
-              backgroundSize: "96px 96px",
-            }}
-          />
-          <div className="absolute left-5 top-5 rounded-lg border border-black/20 bg-black/55 px-4 py-3 backdrop-blur">
-            <div className="text-xs text-slate-400">{mainMapImage.site}</div>
-            <div className="mt-1 text-3xl text-emerald-300">{mainMapImage.ndvi.toFixed(2)}</div>
-            <div className="text-xs text-slate-300">{t("common.ndvi")}</div>
-          </div>
-          <div className="absolute bottom-5 left-5 right-5">
-            <div className="rounded-lg border border-white/10 bg-black/55 p-3 backdrop-blur">
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                <span>{t("dashboard.timeline")}</span>
-                <span>{mainMapImage.date}</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                defaultValue={86}
-                className="w-full accent-emerald-500"
-                aria-label={t("dashboard.timeline")}
-              />
+          <div className="relative h-[360px] overflow-hidden bg-[#0d1117]">
+            <ImageWithFallback
+              src={mainImage.url}
+              alt={mainImage.site}
+              className="h-full w-full object-cover"
+            />
+            <div
+              className="absolute inset-0 mix-blend-multiply opacity-70"
+              style={{
+                background:
+                  "radial-gradient(circle at 30% 35%, rgba(34,197,94,0.68), transparent 28%), radial-gradient(circle at 68% 46%, rgba(132,204,22,0.58), transparent 26%), radial-gradient(circle at 52% 72%, rgba(234,179,8,0.44), transparent 24%)",
+              }}
+            />
+            <div className="absolute left-5 top-5 rounded-lg border border-white/10 bg-black/60 px-4 py-3 backdrop-blur">
+              <div className="text-xs text-slate-400">{mainImage.site}</div>
+              <div className="mt-1 text-3xl text-emerald-300">{mainImage.ndvi.toFixed(2)}</div>
+              <div className="text-xs text-slate-300">{t("common.currentNdvi")}</div>
+            </div>
+            <div className="absolute bottom-5 left-5 right-5 grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: t("common.target"), value: mainImage.target.toFixed(2) },
+                { label: t("common.baselineNdvi"), value: mainImage.baseline.toFixed(2) },
+                { label: t("common.validPixels"), value: `${mainImage.validPixels}%` },
+                { label: t("common.cloudCover"), value: `${mainImage.cloudCover}%` },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 backdrop-blur">
+                  <div className="text-[11px] text-slate-400">{item.label}</div>
+                  <div className="text-sm text-slate-100 mt-0.5">{item.value}</div>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="absolute bottom-24 right-5 rounded-lg border border-white/10 bg-black/55 px-3 py-2 text-xs text-slate-300 backdrop-blur">
-            {t("dashboard.sentinelOnly")}
-          </div>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Main grid */}
+        <Card className="p-5">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-300">
+              <FileCheck2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-slate-200">{t("dashboard.reportEvidence")}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">{t("dashboard.reportEvidenceSub")}</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {reportEvidence.map((item) => (
+              <div key={item.labelKey} className="rounded-lg border border-zinc-800 bg-[#18181b]/60 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm text-slate-300">{t(item.labelKey)}</div>
+                  <div className="text-xs text-emerald-300">{item.value}</div>
+                </div>
+                <div className="mt-1 text-xs text-slate-500">{t(item.subKey)}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* NDVI Trend Chart */}
         <div className="xl:col-span-2 rounded-lg bg-[#111113] border border-zinc-800 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -232,25 +235,31 @@ export function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Rehabilitation Radar */}
         <div className="rounded-lg bg-[#111113] border border-zinc-800 p-5">
-          <div className="mb-3">
-            <h3 className="text-slate-200">{t("dashboard.rehabIndicators")}</h3>
-            <p className="text-xs text-slate-500 mt-0.5">{t("dashboard.rehabIndicatorsSub")}</p>
+          <div className="mb-4">
+            <h3 className="text-slate-200">{t("dashboard.areaClasses")}</h3>
+            <p className="text-xs text-slate-500 mt-0.5">{t("dashboard.areaClassesSub")}</p>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="#27272a" />
-              <PolarAngleAxis dataKey="metric" tick={{ fill: "#64748b", fontSize: 10 }} />
-              <Radar dataKey="value" stroke="#22c55e" fill="#22c55e" fillOpacity={0.12} strokeWidth={2} dot={{ fill: "#22c55e", r: 3 }} />
-            </RadarChart>
-          </ResponsiveContainer>
+          <div className="space-y-3">
+            {portfolioNdviClasses.map((item) => {
+              const percent = (item.area / totalClassArea) * 100;
+              return (
+                <div key={item.labelKey}>
+                  <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                    <span className="text-slate-300">{t(item.labelKey)} <span className="text-slate-600">{item.range}</span></span>
+                    <span className="text-slate-400">{item.area} ha</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#27272a] overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: item.color }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Site Progress + Bar Chart */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Site Progress */}
         <div className="xl:col-span-2 rounded-lg bg-[#111113] border border-zinc-800 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -267,9 +276,12 @@ export function Dashboard() {
               <div key={site.site} className="flex items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-slate-300 truncate">{site.site}</span>
+                    <div className="min-w-0">
+                      <span className="block truncate text-sm text-slate-300">{site.site}</span>
+                      <span className="text-xs text-slate-500">{signed(site.change)} {t("dashboard.vsBaseline")}</span>
+                    </div>
                     <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                      <span className="text-xs text-slate-400">{(site.ndvi * 100).toFixed(0)}% / {(site.target * 100).toFixed(0)}%</span>
+                      <span className="text-xs text-slate-400">{site.ndvi.toFixed(2)} / {site.target.toFixed(2)}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full border capitalize ${statusColor(site.status)}`}>
                         {t(`status.${site.status}`)}
                       </span>
@@ -279,18 +291,19 @@ export function Dashboard() {
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
-                        width: `${(site.ndvi / site.target) * 100}%`,
+                        width: `${Math.min((site.ndvi / site.target) * 100, 100)}%`,
                         backgroundColor: ndviColor(site.ndvi),
                       }}
                     />
                   </div>
                 </div>
-                <div className="text-xs text-slate-500 flex-shrink-0 w-16 text-right">{site.area} ha</div>
+                <div className="hidden sm:block text-xs text-slate-500 flex-shrink-0 w-28 text-right">
+                  {site.vegetatedArea} / {site.area} ha
+                </div>
               </div>
             ))}
           </div>
 
-          {/* NDVI legend */}
           <div className="mt-5 pt-4 border-t border-zinc-800">
             <div className="flex flex-wrap items-center gap-1">
               <span className="text-xs text-slate-500 mr-2">{t("dashboard.ndviScale")}:</span>
@@ -310,7 +323,6 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* NDVI Bar Chart */}
         <div className="rounded-lg bg-[#111113] border border-zinc-800 p-5">
           <div className="mb-3">
             <h3 className="text-slate-200">{t("dashboard.ndviBySite")}</h3>
@@ -320,7 +332,13 @@ export function Dashboard() {
             <BarChart data={siteProgress} layout="vertical" margin={{ top: 0, right: 5, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
               <XAxis type="number" domain={[0, 0.75]} tick={{ fill: "#64748b", fontSize: 10 }} tickLine={false} axisLine={false} />
-              <YAxis type="category" dataKey="site" tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false} width={100}
+              <YAxis
+                type="category"
+                dataKey="site"
+                tick={{ fill: "#94a3b8", fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+                width={100}
                 tickFormatter={(v) => v.split(" ")[0] + " " + (v.split(" ")[1] ?? "")}
               />
               <Tooltip
@@ -336,7 +354,6 @@ export function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
-
     </div>
   );
 }

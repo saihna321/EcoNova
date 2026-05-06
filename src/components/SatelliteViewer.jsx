@@ -421,7 +421,7 @@ export function SatelliteViewer() {
         {/* Info panel */}
         {showInfo && (
           <div className="bg-[#111113]/95 border-t border-zinc-800 p-4">
-            <div className="grid grid-cols-4 gap-4 text-xs">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-xs">
               <div>
                 <div className="text-slate-500">{t("satellite.siteArea")}</div>
                 <div className="text-slate-200 mt-0.5">{currentSite.area} ha</div>
@@ -437,6 +437,14 @@ export function SatelliteViewer() {
               <div>
                 <div className="text-slate-500">{t("satellite.resolution")}</div>
                 <div className="text-slate-200 mt-0.5">10m x 10m</div>
+              </div>
+              <div>
+                <div className="text-slate-500">{t("common.validPixels")}</div>
+                <div className="text-emerald-300 mt-0.5">{currentDate.validPixels}%</div>
+              </div>
+              <div>
+                <div className="text-slate-500">{t("common.cloudCover")}</div>
+                <div className="text-slate-200 mt-0.5">{currentDate.cloudCover}%</div>
               </div>
             </div>
           </div>

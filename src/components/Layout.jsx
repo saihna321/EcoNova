@@ -5,6 +5,7 @@ import {
   Mountain,
   FileBarChart2,
   Bell,
+  Satellite,
   ChevronLeft,
   ChevronRight,
   Leaf,
@@ -18,6 +19,7 @@ import { useLanguage } from "../i18n";
 const navItems = [
   { to: "/", icon: LayoutDashboard, labelKey: "nav.dashboard" },
   { to: "/sites", icon: Mountain, labelKey: "nav.sites" },
+  { to: "/satellite", icon: Satellite, labelKey: "nav.satellite" },
   { to: "/reports", icon: FileBarChart2, labelKey: "nav.reports" },
   { to: "/alerts", icon: Bell, labelKey: "nav.alerts" },
 ];

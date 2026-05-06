@@ -39,30 +39,21 @@ function statusStyle(s) {
   return map[s] ?? "text-slate-400";
 }
 
-function complianceStyle(c) {
-  if (c === "Compliant") return "text-emerald-400";
-  if (c === "Under Review") return "text-yellow-400";
-  return "text-red-400";
-}
-
-function complianceKey(c) {
-  if (c === "Compliant") return "status.compliant";
-  if (c === "Under Review") return "status.underReview";
-  if (c === "Non-Compliant") return "status.nonCompliant";
-  return "common.status";
-}
-
 export function Sites() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [expandedSite, setExpandedSite] = useState(null);
   const { t } = useLanguage();
+  const totalArea = demoSites.reduce((sum, site) => sum + site.area, 0);
+  const onTrackCount = demoSites.filter((site) => site.status === "on-track" || site.status === "achieved").length;
+  const avgNdvi = demoSites.reduce((sum, site) => sum + site.currentNdvi, 0) / demoSites.length;
+  const targetAchievement = demoSites.reduce((sum, site) => sum + Math.min(site.currentNdvi / site.targetNdvi, 1), 0) / demoSites.length;
 
   const stats = [
-    { label: t("sites.totalArea"), value: "1,059 ha", color: "text-emerald-300", bg: "bg-emerald-500/10 border-emerald-500/20" },
-    { label: t("sites.onTrack"), value: "4 / 5", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-    { label: t("sites.avgNdvi"), value: "0.556", color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
-    { label: t("sites.targetAchievement"), value: "81.6%", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
+    { label: t("sites.totalArea"), value: `${totalArea.toLocaleString()} ha`, color: "text-emerald-300", bg: "bg-emerald-500/10 border-emerald-500/20" },
+    { label: t("sites.onTrack"), value: `${onTrackCount} / ${demoSites.length}`, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+    { label: t("sites.avgNdvi"), value: avgNdvi.toFixed(3), color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
+    { label: t("sites.targetAchievement"), value: `${(targetAchievement * 100).toFixed(1)}%`, color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
   ];
 
   const filtered = demoSites.filter((s) => {
@@ -152,7 +143,6 @@ export function Sites() {
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{site.region}</span>
-                        <span>{site.type}</span>
                         <span>{site.area} ha</span>
                         <span>{site.coords}</span>
                       </div>
@@ -169,8 +159,8 @@ export function Sites() {
                         <div className="text-xs text-slate-600">{t("common.progress")}</div>
                       </div>
                       <div className="text-center hidden sm:block">
-                        <div className={`text-xs ${complianceStyle(site.compliance)}`}>{t(complianceKey(site.compliance))}</div>
-                        <div className="text-xs text-slate-600">{t("common.status")}</div>
+                        <div className="text-xs text-emerald-300">{site.validPixels}%</div>
+                        <div className="text-xs text-slate-600">{t("common.validPixels")}</div>
                       </div>
                       {isExpanded ? (
                         <ChevronUp className="w-4 h-4 text-slate-500" />
@@ -204,9 +194,14 @@ export function Sites() {
                           {[
                             { label: t("sites.rehabStarted"), value: site.rehabStart },
                             { label: t("sites.targetDate"), value: site.targetDate },
+                            { label: t("common.baselineNdvi"), value: site.baselineNdvi.toFixed(2) },
                             { label: t("sites.targetNdvi"), value: site.targetNdvi.toFixed(2) },
                             { label: t("common.currentNdvi"), value: site.currentNdvi.toFixed(2) },
-                            { label: t("sites.speciesCount"), value: site.species },
+                            { label: t("common.ndviChange"), value: `+${site.ndviChange.toFixed(2)}` },
+                            { label: t("common.vegetatedArea"), value: `${site.vegetatedArea} ha` },
+                            { label: t("common.decliningArea"), value: `${site.decliningArea} ha` },
+                            { label: t("common.validPixels"), value: `${site.validPixels}%` },
+                            { label: t("common.cloudCover"), value: `${site.cloudCover}%` },
                             { label: t("sites.lastCapture"), value: site.lastCapture },
                           ].map((row) => (
                             <div key={row.label} className="flex justify-between text-xs">
