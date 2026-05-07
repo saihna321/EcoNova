@@ -1,27 +1,45 @@
-﻿import { useState, useRef, useEffect, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 import {
-  Layers,
-  ZoomIn,
-  ZoomOut,
-  Download,
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Crosshair,
+  Download,
   Info,
+  Layers,
   Maximize2,
   SlidersHorizontal,
-  Crosshair,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useLanguage } from "../i18n";
+import {
+  getLiveSiteEvidence,
+  makeMonthDateRange,
+  makeSquareGeometryFromSite,
+  parseSiteCoordinate,
+} from "../api";
 import { demoSites } from "../data/demoSites";
 import {
   bandOptions,
   dateRange,
-  imageUrls,
   ndviLegendStops,
   satellites,
 } from "../data/demoSatelliteData";
+
+const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_STYLE = "mapbox://styles/mapbox/satellite-v9";
+const SITE_SOURCE_ID = "site-boundary";
+const SITE_FILL_LAYER_ID = "site-boundary-fill";
+const SITE_LINE_LAYER_ID = "site-boundary-line";
+const NDVI_SOURCE_ID = "sentinel-ndvi";
+const NDVI_LAYER_ID = "sentinel-ndvi";
+
+if (MAPBOX_ACCESS_TOKEN) {
+  mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+}
 
 function NDVILegend({ title }) {
   return (
@@ -39,68 +57,52 @@ function NDVILegend({ title }) {
   );
 }
 
-// Simulated NDVI overlay drawn on canvas
-function NDVIOverlay({ ndvi, active, opacity }) {
-  const canvasRef = useRef(null);
+function getGeometryBounds(geometry) {
+  const bounds = new mapboxgl.LngLatBounds();
+  geometry.coordinates[0].forEach((coordinate) => bounds.extend(coordinate));
+  return bounds;
+}
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !active) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+function getImageCoordinates(geometry) {
+  const ring = geometry.coordinates[0];
+  return [ring[3], ring[2], ring[1], ring[0]];
+}
 
-    const W = canvas.width;
-    const H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
+function makeBoundaryFeature(geometry) {
+  return {
+    type: "Feature",
+    properties: {},
+    geometry,
+  };
+}
 
-    // Create a simulated NDVI heatmap
-    const imageData = ctx.createImageData(W, H);
+function getProbeNdvi(point, baseNdvi) {
+  const noise =
+    Math.sin(point.lng * 8) * 0.1 +
+    Math.sin(point.lat * 6) * 0.08;
+  return Math.max(0, Math.min(0.9, baseNdvi + noise));
+}
 
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        // Generate pseudo-random but smooth NDVI values
-        const nx = x / W;
-        const ny = y / H;
-        // Base using sin waves for smooth variation
-        const noise =
-          Math.sin(nx * 8 + 1.2) * 0.15 +
-          Math.sin(ny * 6 + 0.8) * 0.12 +
-          Math.sin((nx + ny) * 12) * 0.08 +
-          Math.sin(nx * ny * 20) * 0.05;
-        const val = Math.max(-0.1, Math.min(0.9, ndvi + noise - 0.1));
+function getStaticMapUrl(site) {
+  if (!MAPBOX_ACCESS_TOKEN) return "";
 
-        let r, g, b;
-        if (val < 0) { r = 26; g = 26; b = 122; }
-        else if (val < 0.1) { r = 139; g = 0; b = 0; }
-        else if (val < 0.2) { r = 255; g = 69; b = 0; }
-        else if (val < 0.3) { r = 255; g = 140; b = 0; }
-        else if (val < 0.4) { r = 255; g = 215; b = 0; }
-        else if (val < 0.5) { r = 154; g = 205; b = 50; }
-        else if (val < 0.6) { r = 50; g = 205; b = 50; }
-        else if (val < 0.7) { r = 34; g = 139; b = 34; }
-        else { r = 0; g = 100; b = 0; }
+  const { latitude, longitude } = parseSiteCoordinate(site.coords);
+  return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},15,0/1280x900@2x?access_token=${MAPBOX_ACCESS_TOKEN}`;
+}
 
-        const idx = (y * W + x) * 4;
-        imageData.data[idx] = r;
-        imageData.data[idx + 1] = g;
-        imageData.data[idx + 2] = b;
-        imageData.data[idx + 3] = Math.round(opacity * 255);
-      }
-    }
-    ctx.putImageData(imageData, 0, 0);
-  }, [ndvi, active, opacity]);
+function fitSiteBounds(map, geometry, options = {}) {
+  const container = map.getContainer();
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  if (width < 160 || height < 160) return;
 
-  if (!active) return null;
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={600}
-      height={400}
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ mixBlendMode: "multiply" }}
-    />
-  );
+  map.resize();
+  map.fitBounds(getGeometryBounds(geometry), {
+    duration: 900,
+    maxZoom: 17,
+    padding: Math.min(70, Math.floor(Math.min(width, height) / 5)),
+    ...options,
+  });
 }
 
 export function SatelliteViewer() {
@@ -110,21 +112,33 @@ export function SatelliteViewer() {
   const [selectedSatellite, setSelectedSatellite] = useState(0);
   const [ndviOpacity, setNdviOpacity] = useState(0.7);
   const [ndviActive, setNdviActive] = useState(true);
-  const [zoom, setZoom] = useState(1);
   const [showInfo, setShowInfo] = useState(false);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [crosshair, setCrosshair] = useState(null);
+  const [liveEvidence, setLiveEvidence] = useState(null);
+  const [liveError, setLiveError] = useState("");
+  const [isLoadingLive, setIsLoadingLive] = useState(false);
+  const [mapError, setMapError] = useState(
+    MAPBOX_ACCESS_TOKEN ? "" : "Add VITE_MAPBOX_ACCESS_TOKEN to .env and restart Vite."
+  );
+  const [mapReady, setMapReady] = useState(false);
   const { t } = useLanguage();
-  const viewerRef = useRef(null);
+
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
   const currentSite = demoSites[selectedSite] ?? demoSites[0];
   const currentDate = dateRange[selectedDate] ?? dateRange[0];
   const currentSatellite = satellites[selectedSatellite] ?? satellites[0];
-  const imgIdx = selectedSite % imageUrls.length;
-  const currentImageUrl = imageUrls[imgIdx] ?? imageUrls[0];
+  const currentGeometry = useMemo(() => makeSquareGeometryFromSite(currentSite), [currentSite]);
+  const staticMapUrl = useMemo(() => getStaticMapUrl(currentSite), [currentSite]);
 
-  const currentNdvi = currentDate.ndvi;
+  const latestLivePoint = liveEvidence?.timeSeries?.at(-1);
+  const currentNdvi = latestLivePoint?.meanNdvi ?? currentDate.ndvi;
+  const liveScene = liveEvidence?.scenes?.features?.[0];
+  const liveCloudCover = liveScene?.properties?.["eo:cloud_cover"];
+  const liveAcquisition = liveScene?.properties?.datetime;
+  const showLiveNdviOverlay =
+    selectedBand === "ndvi" && ndviActive && Boolean(liveEvidence?.ndviImageUrl);
+
   const localizedBandOptions = bandOptions.map((band) => ({
     ...band,
     label: band.id === "ndvi" ? t("common.ndvi") :
@@ -133,39 +147,190 @@ export function SatelliteViewer() {
       band.id === "rgb" ? t("satellite.rgbComposite") : band.description,
   }));
 
-  const handleMouseDown = (e) => {
-    if (e.button !== 0) return;
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-  };
+  useEffect(() => {
+    const controller = new AbortController();
+    let ndviImageUrl;
+    let rgbImageUrl;
 
-  const handleMouseMove = useCallback(
-    (e) => {
-      if (isDragging) {
-        setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
-      }
-      // Simulate pixel probe
-      if (viewerRef.current) {
-        const rect = viewerRef.current.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return;
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        const noise = Math.sin(x * 8) * 0.1 + Math.sin(y * 6) * 0.08;
-        const ndviVal = Math.max(0, Math.min(0.9, currentNdvi + noise));
-        setCrosshair({ x: e.clientX - rect.left, y: e.clientY - rect.top, ndvi: ndviVal });
-      }
-    },
-    [isDragging, dragStart, currentNdvi]
-  );
+    async function loadLiveEvidence() {
+      setIsLoadingLive(true);
+      setLiveError("");
 
-  const handleMouseUp = () => setIsDragging(false);
-  const handleMouseLeave = () => { setIsDragging(false); setCrosshair(null); };
+      try {
+        const { from, to } = makeMonthDateRange(currentDate.label);
+        const evidence = await getLiveSiteEvidence({
+          baselineNdvi: currentSite.baselineNdvi,
+          geometry: currentGeometry,
+          targetNdvi: currentSite.targetNdvi,
+          from,
+          signal: controller.signal,
+          to,
+        });
+
+        if (controller.signal.aborted) return;
+
+        ndviImageUrl = URL.createObjectURL(evidence.ndviImage);
+        rgbImageUrl = URL.createObjectURL(evidence.rgbImage);
+        setLiveEvidence({
+          ...evidence,
+          ndviImageUrl,
+          rgbImageUrl,
+        });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setLiveEvidence(null);
+        setLiveError(error.body?.details ?? error.body?.message ?? error.message);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingLive(false);
+        }
+      }
+    }
+
+    loadLiveEvidence();
+
+    return () => {
+      controller.abort();
+      if (ndviImageUrl) URL.revokeObjectURL(ndviImageUrl);
+      if (rgbImageUrl) URL.revokeObjectURL(rgbImageUrl);
+    };
+  }, [currentDate.label, currentGeometry, currentSite]);
+
+  useEffect(() => {
+    if (!MAPBOX_ACCESS_TOKEN) {
+      return undefined;
+    }
+
+    if (!mapContainerRef.current || mapRef.current) {
+      return undefined;
+    }
+
+    const { latitude, longitude } = parseSiteCoordinate(currentSite.coords);
+    const map = new mapboxgl.Map({
+      attributionControl: true,
+      center: [longitude, latitude],
+      container: mapContainerRef.current,
+      dragRotate: false,
+      pitchWithRotate: false,
+      style: MAPBOX_STYLE,
+      zoom: 14,
+    });
+
+    mapRef.current = map;
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    map.on("load", () => setMapReady(true));
+    map.on("error", (event) => {
+      setMapError(event.error?.message ?? "Mapbox failed to load.");
+    });
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      setMapReady(false);
+    };
+  }, [currentSite.coords]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    const boundary = makeBoundaryFeature(currentGeometry);
+
+    if (map.getSource(SITE_SOURCE_ID)) {
+      map.getSource(SITE_SOURCE_ID).setData(boundary);
+    } else {
+      map.addSource(SITE_SOURCE_ID, {
+        type: "geojson",
+        data: boundary,
+      });
+      map.addLayer({
+        id: SITE_FILL_LAYER_ID,
+        type: "fill",
+        source: SITE_SOURCE_ID,
+        paint: {
+          "fill-color": "#10b981",
+          "fill-opacity": 0.08,
+        },
+      });
+      map.addLayer({
+        id: SITE_LINE_LAYER_ID,
+        type: "line",
+        source: SITE_SOURCE_ID,
+        paint: {
+          "line-color": "#34d399",
+          "line-width": 2,
+        },
+      });
+    }
+
+    requestAnimationFrame(() => fitSiteBounds(map, currentGeometry));
+  }, [currentGeometry, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    if (!liveEvidence?.ndviImageUrl) {
+      if (map.getLayer(NDVI_LAYER_ID)) map.removeLayer(NDVI_LAYER_ID);
+      if (map.getSource(NDVI_SOURCE_ID)) map.removeSource(NDVI_SOURCE_ID);
+      return;
+    }
+
+    const coordinates = getImageCoordinates(currentGeometry);
+    if (map.getSource(NDVI_SOURCE_ID)) {
+      map.getSource(NDVI_SOURCE_ID).updateImage({
+        url: liveEvidence.ndviImageUrl,
+        coordinates,
+      });
+    } else {
+      map.addSource(NDVI_SOURCE_ID, {
+        type: "image",
+        url: liveEvidence.ndviImageUrl,
+        coordinates,
+      });
+      map.addLayer({
+        id: NDVI_LAYER_ID,
+        type: "raster",
+        source: NDVI_SOURCE_ID,
+        paint: {
+          "raster-fade-duration": 0,
+          "raster-opacity": 0,
+        },
+      });
+    }
+  }, [currentGeometry, liveEvidence?.ndviImageUrl, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !map.getLayer(NDVI_LAYER_ID)) return;
+    map.setPaintProperty(NDVI_LAYER_ID, "raster-opacity", showLiveNdviOverlay ? ndviOpacity : 0);
+  }, [mapReady, ndviOpacity, showLiveNdviOverlay]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return undefined;
+
+    const handleMouseMove = (event) => {
+      setCrosshair({
+        x: event.point.x,
+        y: event.point.y,
+        ndvi: getProbeNdvi(event.lngLat, currentNdvi),
+      });
+    };
+    const handleMouseOut = () => setCrosshair(null);
+
+    map.on("mousemove", handleMouseMove);
+    map.on("mouseout", handleMouseOut);
+
+    return () => {
+      map.off("mousemove", handleMouseMove);
+      map.off("mouseout", handleMouseOut);
+    };
+  }, [currentNdvi, mapReady]);
 
   return (
-    <div className="flex h-full">
-      {/* Left panel */}
+    <div className="flex h-[calc(100vh-73px)] min-h-[640px]">
       <div className="w-72 flex-shrink-0 bg-[#111113] border-r border-zinc-800 flex flex-col overflow-y-auto">
-        {/* Site selector */}
         <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("satellite.mineSite")}</div>
           <div className="space-y-1">
@@ -186,7 +351,6 @@ export function SatelliteViewer() {
           </div>
         </div>
 
-        {/* Date selector */}
         <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" />
@@ -225,7 +389,6 @@ export function SatelliteViewer() {
           </div>
         </div>
 
-        {/* Satellite source */}
         <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("satellite.source")}</div>
           <div className="flex flex-wrap gap-2">
@@ -245,7 +408,6 @@ export function SatelliteViewer() {
           </div>
         </div>
 
-        {/* Band selector */}
         <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Layers className="w-3.5 h-3.5" />
@@ -269,7 +431,6 @@ export function SatelliteViewer() {
           </div>
         </div>
 
-        {/* Overlay controls */}
         <div className="p-4">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -304,9 +465,7 @@ export function SatelliteViewer() {
         </div>
       </div>
 
-      {/* Main viewer */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Viewer toolbar */}
         <div className="flex items-center gap-2 px-4 py-2 bg-[#111113]/90 border-b border-zinc-800">
           <div className="text-sm text-slate-300">{currentSite.name}</div>
           <span className="text-slate-700">-</span>
@@ -315,19 +474,23 @@ export function SatelliteViewer() {
           <div className="text-xs text-slate-500">{currentSatellite}</div>
           <div className="ml-auto flex items-center gap-2">
             <button
-              onClick={() => setZoom(Math.min(3, zoom + 0.25))}
+              onClick={() => mapRef.current?.zoomIn()}
               className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-white/10"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}
+              onClick={() => mapRef.current?.zoomOut()}
               className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-white/10"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
             <button
-              onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+              onClick={() => {
+                if (mapRef.current) {
+                  fitSiteBounds(mapRef.current, currentGeometry, { duration: 700 });
+                }
+              }}
               className="px-2 py-1 text-xs rounded text-slate-400 hover:text-slate-200 hover:bg-white/10"
             >
               {t("common.reset")}
@@ -347,78 +510,84 @@ export function SatelliteViewer() {
           </div>
         </div>
 
-        {/* Viewer area */}
         <div className="flex-1 relative overflow-hidden bg-[#0d1117]">
-          <div
-            ref={viewerRef}
-            className="absolute inset-0 cursor-crosshair"
-            style={{ cursor: isDragging ? "grabbing" : "crosshair" }}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-          >
-            <div
-              className="absolute inset-0 transition-transform"
-              style={{
-                transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                transformOrigin: "center center",
-              }}
-            >
-              <ImageWithFallback
-                src={currentImageUrl}
-                alt={currentSite.name}
-                className="w-full h-full object-cover select-none"
-                draggable={false}
-              />
-              <NDVIOverlay ndvi={currentNdvi} active={ndviActive} opacity={ndviOpacity * 0.6} />
-            </div>
-
-            {/* Grid overlay */}
-            <div
-              className="absolute inset-0 pointer-events-none opacity-20"
-              style={{
-                backgroundImage: "linear-gradient(rgba(34,197,94,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(34,197,94,0.3) 1px, transparent 1px)",
-                backgroundSize: "80px 80px",
-              }}
+          {staticMapUrl && (
+            <img
+              src={staticMapUrl}
+              alt={`${currentSite.name} satellite`}
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+                mapReady && !mapError ? "opacity-0" : "opacity-100"
+              }`}
             />
-
-            {/* Crosshair info */}
-            {crosshair && (
-              <div
-                className="absolute pointer-events-none"
-                style={{ left: crosshair.x + 12, top: crosshair.y + 12 }}
-              >
-                <div className="bg-[#111113]/90 border border-emerald-500/30 rounded-lg p-2 text-xs text-slate-200 whitespace-nowrap">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Crosshair className="w-3 h-3 text-emerald-300" />
-                    <span className="text-emerald-300">{t("satellite.pixelProbe")}</span>
-                  </div>
-                  <div>{t("common.ndvi")}: <span className="text-emerald-300">{crosshair.ndvi.toFixed(3)}</span></div>
-                  <div>{currentSite.coords}</div>
-                </div>
-              </div>
-            )}
-
-            {/* Corner coords */}
-            <div className="absolute bottom-4 left-4 text-xs text-slate-400/70 font-mono">
-              {currentSite.coords}
+          )}
+          <div
+            ref={mapContainerRef}
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              mapReady && !mapError ? "opacity-100" : "opacity-0"
+            }`}
+          />
+          {!mapReady && !mapError && (
+            <div className="absolute top-4 right-4 rounded-lg bg-[#111113]/90 border border-zinc-800 px-3 py-2 text-xs text-slate-300">
+              Loading Mapbox satellite...
             </div>
+          )}
+          {mapError && (
+            <div className="absolute top-4 right-4 max-w-sm rounded-lg bg-[#111113]/90 border border-red-500/30 px-3 py-2 text-xs text-red-300">
+              {mapError}
+            </div>
+          )}
 
-            {/* Scale bar */}
-            <div className="absolute bottom-4 right-4 flex items-end gap-2">
-              <div className="flex flex-col items-center gap-0.5">
-                <div className="h-1 w-16 bg-white/60 relative">
-                  <div className="absolute left-0 top-0 h-3 w-px bg-white/60 -translate-y-1" />
-                  <div className="absolute right-0 top-0 h-3 w-px bg-white/60 -translate-y-1" />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-20"
+            style={{
+              backgroundImage: "linear-gradient(rgba(34,197,94,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(34,197,94,0.3) 1px, transparent 1px)",
+              backgroundSize: "80px 80px",
+            }}
+          />
+
+          {crosshair && (
+            <div
+              className="absolute pointer-events-none"
+              style={{ left: crosshair.x + 12, top: crosshair.y + 12 }}
+            >
+              <div className="bg-[#111113]/90 border border-emerald-500/30 rounded-lg p-2 text-xs text-slate-200 whitespace-nowrap">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Crosshair className="w-3 h-3 text-emerald-300" />
+                  <span className="text-emerald-300">{t("satellite.pixelProbe")}</span>
                 </div>
-                <span className="text-xs text-white/60">500m</span>
+                <div>{t("common.ndvi")}: <span className="text-emerald-300">{crosshair.ndvi.toFixed(3)}</span></div>
+                <div>{currentSite.coords}</div>
               </div>
+            </div>
+          )}
+
+          <div className="absolute bottom-4 left-4 text-xs text-slate-100/80 font-mono pointer-events-none">
+            {currentSite.coords}
+          </div>
+
+          {(isLoadingLive || liveError || mapReady) && (
+            <div className="absolute top-4 left-4 rounded-lg bg-[#111113]/90 border border-zinc-800 px-3 py-2 text-xs pointer-events-none">
+              {isLoadingLive && <span className="text-slate-300">Loading Sentinel-2...</span>}
+              {!isLoadingLive && liveError && <span className="text-red-300">{liveError}</span>}
+              {!isLoadingLive && !liveError && mapReady && (
+                <span className="text-emerald-300">
+                  {showLiveNdviOverlay ? "Mapbox satellite + Sentinel-2 NDVI" : "Mapbox satellite"}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="absolute bottom-4 right-4 flex items-end gap-2 pointer-events-none">
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="h-1 w-16 bg-white/70 relative">
+                <div className="absolute left-0 top-0 h-3 w-px bg-white/70 -translate-y-1" />
+                <div className="absolute right-0 top-0 h-3 w-px bg-white/70 -translate-y-1" />
+              </div>
+              <span className="text-xs text-white/70">500m</span>
             </div>
           </div>
         </div>
 
-        {/* Info panel */}
         {showInfo && (
           <div className="bg-[#111113]/95 border-t border-zinc-800 p-4">
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-xs">
@@ -432,7 +601,9 @@ export function SatelliteViewer() {
               </div>
               <div>
                 <div className="text-slate-500">{t("satellite.acquisition")}</div>
-                <div className="text-slate-200 mt-0.5">{currentDate.label}</div>
+                <div className="text-slate-200 mt-0.5">
+                  {liveAcquisition ? new Date(liveAcquisition).toLocaleDateString() : currentDate.label}
+                </div>
               </div>
               <div>
                 <div className="text-slate-500">{t("satellite.resolution")}</div>
@@ -440,17 +611,16 @@ export function SatelliteViewer() {
               </div>
               <div>
                 <div className="text-slate-500">{t("common.validPixels")}</div>
-                <div className="text-emerald-300 mt-0.5">{currentDate.validPixels}%</div>
+                <div className="text-emerald-300 mt-0.5">{latestLivePoint?.validPixels ?? currentDate.validPixels}%</div>
               </div>
               <div>
                 <div className="text-slate-500">{t("common.cloudCover")}</div>
-                <div className="text-slate-200 mt-0.5">{currentDate.cloudCover}%</div>
+                <div className="text-slate-200 mt-0.5">{Math.round(liveCloudCover ?? currentDate.cloudCover)}%</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* NDVI Legend at bottom */}
         <div className="px-4 py-3 bg-[#09090b] border-t border-zinc-800">
           <NDVILegend title={t("satellite.ndviScale")} />
         </div>
