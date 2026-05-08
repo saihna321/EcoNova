@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Outlet, NavLink, useLocation } from "react-router";
+import { Outlet, NavLink } from "react-router";
 import {
   LayoutDashboard,
   Mountain,
@@ -27,12 +27,7 @@ const navItems = [
 export function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const location = useLocation();
-  const { dateLocale, language, languages, setLanguage, t } = useLanguage();
-
-  const currentPage = navItems.find((item) =>
-    item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to)
-  );
+  const { language, languages, setLanguage, t } = useLanguage();
 
   return (
     <div className="flex h-screen bg-[#09090b] text-slate-100 overflow-hidden">
@@ -62,7 +57,6 @@ export function Layout() {
           {!collapsed && (
             <div className="overflow-hidden">
               <div className="text-emerald-300 text-sm font-semibold whitespace-nowrap">EcoNova</div>
-              <div className="text-slate-500 text-xs whitespace-nowrap">{t("common.platform")}</div>
             </div>
           )}
         </div>
@@ -109,26 +103,55 @@ export function Layout() {
           })}
         </nav>
 
-        {/* Collapse button */}
+        {/* Sidebar utilities */}
         <div className="p-3 border-t border-zinc-800">
           {!collapsed && (
-            <label className="mb-3 flex md:hidden items-center gap-2 rounded-lg border border-zinc-800 bg-[#18181b] px-3 py-2 text-xs text-slate-400">
-              <Globe2 className="h-4 w-4 text-emerald-300" />
-              <span className="sr-only">{t("common.language")}</span>
-              <select
-                value={language}
-                onChange={(event) => setLanguage(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-xs text-slate-300 outline-none"
-                aria-label={t("common.language")}
-              >
-                {languages.map((option) => (
-                  <option key={option.code} value={option.code} className="bg-[#111113] text-slate-200">
-                    {option.shortLabel} - {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="mb-3 space-y-3">
+              <label className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-[#18181b] px-3 py-2 text-xs text-slate-400">
+                <Globe2 className="h-4 w-4 text-emerald-300" />
+                <span className="sr-only">{t("common.language")}</span>
+                <select
+                  value={language}
+                  onChange={(event) => setLanguage(event.target.value)}
+                  className="min-w-0 flex-1 bg-transparent text-xs text-slate-300 outline-none"
+                  aria-label={t("common.language")}
+                >
+                  {languages.map((option) => (
+                    <option key={option.code} value={option.code} className="bg-[#111113] text-slate-200">
+                      {option.shortLabel} - {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-[#18181b] px-3 py-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[#052e16] text-xs font-semibold">
+                  GS
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-slate-300">Green Systems</div>
+                </div>
+                <button className="rounded-lg p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5" aria-label="Settings">
+                  <Settings className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           )}
+
+          {collapsed && (
+            <div className="mb-3 flex flex-col items-center gap-2">
+              <button className="rounded-lg p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5" aria-label={t("common.language")}>
+                <Globe2 className="w-4 h-4" />
+              </button>
+              <button className="rounded-lg p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5" aria-label="Settings">
+                <Settings className="w-4 h-4" />
+              </button>
+              <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[#052e16] text-xs font-semibold">
+                GS
+              </div>
+            </div>
+          )}
+
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="hidden lg:flex w-full items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all"
@@ -142,75 +165,21 @@ export function Layout() {
               </>
             )}
           </button>
-          {!collapsed && (
-            <div className="mt-3 px-3 py-2 rounded-lg bg-emerald-500/5 border border-zinc-800">
-              <div className="text-xs text-slate-500">{t("common.lastSync")}</div>
-              <div className="text-xs text-emerald-300 mt-0.5">{t("common.syncTime")}</div>
-            </div>
-          )}
         </div>
       </aside>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="flex items-center gap-4 px-6 py-4 bg-[#111113]/90 backdrop-blur border-b border-zinc-800 flex-shrink-0">
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto bg-[#09090b]">
           <button
-            className="lg:hidden text-slate-400 hover:text-slate-200"
+            className="fixed left-4 top-4 z-20 rounded-lg border border-zinc-800 bg-[#111113]/90 p-2 text-slate-400 backdrop-blur hover:text-slate-200 lg:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle navigation"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-
-          <div>
-            <h1 className="text-slate-100">{currentPage ? t(currentPage.labelKey) : t("nav.dashboard")}</h1>
-            <p className="text-xs text-slate-500">
-              Sentinel-2 / Sentinel Hub / {new Date().toLocaleDateString(dateLocale, { dateStyle: "long" })}
-            </p>
-          </div>
-
-          <div className="ml-auto flex items-center gap-3">
-            <label className="hidden md:flex items-center gap-2 rounded-lg border border-zinc-800 bg-[#18181b] px-2 py-1.5 text-xs text-slate-400">
-              <Globe2 className="h-4 w-4 text-emerald-300" />
-              <span className="sr-only">{t("common.language")}</span>
-              <select
-                value={language}
-                onChange={(event) => setLanguage(event.target.value)}
-                className="bg-transparent text-xs text-slate-300 outline-none"
-                aria-label={t("common.language")}
-              >
-                {languages.map((option) => (
-                  <option key={option.code} value={option.code} className="bg-[#111113] text-slate-200">
-                    {option.shortLabel} - {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {/* Status indicator */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs text-emerald-300">{t("common.liveFeed")}</span>
-            </div>
-
-            <button className="relative p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full" />
-            </button>
-
-            <button className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5">
-              <Settings className="w-5 h-5" />
-            </button>
-
-            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[#052e16] text-xs font-semibold">
-              GS
-            </div>
-          </div>
-        </header>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-[#09090b]">
-          <div key={location.pathname} className="page-transition min-h-full">
+          <div className="page-transition min-h-full">
             <Outlet />
           </div>
         </main>

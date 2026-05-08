@@ -23,13 +23,12 @@ export const imageUrls = [
 ];
 
 export const ndviLegendStops = [
-  { value: "< 0", color: "#1a1a7a", label: "Water" },
-  { value: "0.0", color: "#8B0000" },
-  { value: "0.1", color: "#FF4500" },
-  { value: "0.2", color: "#FF8C00" },
-  { value: "0.3", color: "#FFD700" },
-  { value: "0.4", color: "#9ACD32" },
-  { value: "0.5", color: "#32CD32" },
-  { value: "0.6", color: "#00CC66" },
-  { value: "0.7+", color: "#22c55e" },
+  { value: "< 0", color: "#313695", label: "Water / shadow" },
+  { value: "0.0", color: "#a50026", label: "Bare soil" },
+  { value: "0.18", color: "#d73027", label: "Very sparse" },
+  { value: "0.32", color: "#f46d43", label: "Sparse" },
+  { value: "0.48", color: "#fdae61", label: "Moderate" },
+  { value: "0.62", color: "#fee08b", label: "Recovering" },
+  { value: "0.74", color: "#66bd63", label: "Healthy" },
+  { value: "0.8+", color: "#006837", label: "Dense" },
 ];

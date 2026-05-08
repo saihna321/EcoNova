@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import ndviOverlayImage from "../assets/image.png";
 import {
   Calendar,
   ChevronLeft,
@@ -16,8 +17,6 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../i18n";
 import {
-  getLiveSiteEvidence,
-  makeMonthDateRange,
   makeSquareGeometryFromSite,
   parseSiteCoordinate,
 } from "../api";
@@ -26,7 +25,6 @@ import {
   bandOptions,
   dateRange,
   ndviLegendStops,
-  satellites,
 } from "../data/demoSatelliteData";
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
@@ -36,6 +34,14 @@ const SITE_FILL_LAYER_ID = "site-boundary-fill";
 const SITE_LINE_LAYER_ID = "site-boundary-line";
 const NDVI_SOURCE_ID = "sentinel-ndvi";
 const NDVI_LAYER_ID = "sentinel-ndvi";
+
+const NDVI_CLASSES = [
+  { key: "bare", labelKey: "satellite.ndviBare", range: "< 0.20", color: "#a50026" },
+  { key: "sparse", labelKey: "satellite.ndviSparse", range: "0.20-0.35", color: "#d73027" },
+  { key: "moderate", labelKey: "satellite.ndviModerate", range: "0.35-0.50", color: "#fdae61" },
+  { key: "healthy", labelKey: "satellite.ndviHealthy", range: "0.50-0.65", color: "#66bd63" },
+  { key: "dense", labelKey: "satellite.ndviDense", range: "> 0.65", color: "#006837" },
+];
 
 if (MAPBOX_ACCESS_TOKEN) {
   mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
@@ -90,6 +96,47 @@ function getStaticMapUrl(site) {
   return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},15,0/1280x900@2x?access_token=${MAPBOX_ACCESS_TOKEN}`;
 }
 
+function getSiteDateNdvi(site, dateIndex) {
+  const date = dateRange[dateIndex] ?? dateRange[0];
+  const siteOffset = site.currentNdvi - dateRange[0].ndvi;
+  return Math.max(0.05, Math.min(0.86, date.ndvi + siteOffset));
+}
+
+function getNdviClassStats(site, ndvi, dateIndex) {
+  const recovery = Math.max(0, Math.min(1, (ndvi - site.baselineNdvi) / (site.targetNdvi - site.baselineNdvi)));
+  const monthDrag = dateIndex * 0.9;
+  const bare = Math.max(8, 34 - recovery * 18 + monthDrag);
+  const sparse = Math.max(12, 32 - recovery * 10 + monthDrag * 0.5);
+  const moderate = Math.max(18, 34 - Math.abs(recovery - 0.5) * 12);
+  const healthy = Math.max(7, 13 + recovery * 8 - monthDrag * 0.25);
+  const dense = Math.max(4, 100 - bare - sparse - moderate - healthy);
+  const total = bare + sparse + moderate + healthy + dense;
+
+  return NDVI_CLASSES.map((item) => {
+    const raw = { bare, sparse, moderate, healthy, dense }[item.key];
+    const percent = (raw / total) * 100;
+    return {
+      ...item,
+      hectares: (site.area * percent) / 100,
+      percent,
+    };
+  });
+}
+
+function getNdviClass(value) {
+  if (value < 0.2) return NDVI_CLASSES[0];
+  if (value < 0.35) return NDVI_CLASSES[1];
+  if (value < 0.5) return NDVI_CLASSES[2];
+  if (value < 0.65) return NDVI_CLASSES[3];
+  return NDVI_CLASSES[4];
+}
+
+function getNdviBandLabel(value) {
+  if (value < 0.35) return "Low";
+  if (value < 0.55) return "Moderate";
+  return "Recovering";
+}
+
 function fitSiteBounds(map, geometry, options = {}) {
   const container = map.getContainer();
   const width = container.clientWidth;
@@ -109,14 +156,10 @@ export function SatelliteViewer() {
   const [selectedSite, setSelectedSite] = useState(0);
   const [selectedDate, setSelectedDate] = useState(0);
   const [selectedBand, setSelectedBand] = useState("ndvi");
-  const [selectedSatellite, setSelectedSatellite] = useState(0);
-  const [ndviOpacity, setNdviOpacity] = useState(0.7);
+  const [ndviOpacity, setNdviOpacity] = useState(0.72);
   const [ndviActive, setNdviActive] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [crosshair, setCrosshair] = useState(null);
-  const [liveEvidence, setLiveEvidence] = useState(null);
-  const [liveError, setLiveError] = useState("");
-  const [isLoadingLive, setIsLoadingLive] = useState(false);
   const [mapError, setMapError] = useState(
     MAPBOX_ACCESS_TOKEN ? "" : "Add VITE_MAPBOX_ACCESS_TOKEN to .env and restart Vite."
   );
@@ -127,17 +170,17 @@ export function SatelliteViewer() {
   const mapRef = useRef(null);
   const currentSite = demoSites[selectedSite] ?? demoSites[0];
   const currentDate = dateRange[selectedDate] ?? dateRange[0];
-  const currentSatellite = satellites[selectedSatellite] ?? satellites[0];
   const currentGeometry = useMemo(() => makeSquareGeometryFromSite(currentSite), [currentSite]);
   const staticMapUrl = useMemo(() => getStaticMapUrl(currentSite), [currentSite]);
+  const currentNdvi = getSiteDateNdvi(currentSite, selectedDate);
+  const displayedNdviUrl = ndviOverlayImage;
+  const ndviStats = useMemo(
+    () => getNdviClassStats(currentSite, currentNdvi, selectedDate),
+    [currentSite, currentNdvi, selectedDate]
+  );
+  const currentNdviClass = getNdviClass(currentNdvi);
 
-  const latestLivePoint = liveEvidence?.timeSeries?.at(-1);
-  const currentNdvi = latestLivePoint?.meanNdvi ?? currentDate.ndvi;
-  const liveScene = liveEvidence?.scenes?.features?.[0];
-  const liveCloudCover = liveScene?.properties?.["eo:cloud_cover"];
-  const liveAcquisition = liveScene?.properties?.datetime;
-  const showLiveNdviOverlay =
-    selectedBand === "ndvi" && ndviActive && Boolean(liveEvidence?.ndviImageUrl);
+  const showStaticNdviOverlay = selectedBand === "ndvi" && ndviActive;
 
   const localizedBandOptions = bandOptions.map((band) => ({
     ...band,
@@ -146,55 +189,6 @@ export function SatelliteViewer() {
     description: band.id === "ndvi" ? t("satellite.vegetationIndex") :
       band.id === "rgb" ? t("satellite.rgbComposite") : band.description,
   }));
-
-  useEffect(() => {
-    const controller = new AbortController();
-    let ndviImageUrl;
-    let rgbImageUrl;
-
-    async function loadLiveEvidence() {
-      setIsLoadingLive(true);
-      setLiveError("");
-
-      try {
-        const { from, to } = makeMonthDateRange(currentDate.label);
-        const evidence = await getLiveSiteEvidence({
-          baselineNdvi: currentSite.baselineNdvi,
-          geometry: currentGeometry,
-          targetNdvi: currentSite.targetNdvi,
-          from,
-          signal: controller.signal,
-          to,
-        });
-
-        if (controller.signal.aborted) return;
-
-        ndviImageUrl = URL.createObjectURL(evidence.ndviImage);
-        rgbImageUrl = URL.createObjectURL(evidence.rgbImage);
-        setLiveEvidence({
-          ...evidence,
-          ndviImageUrl,
-          rgbImageUrl,
-        });
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        setLiveEvidence(null);
-        setLiveError(error.body?.details ?? error.body?.message ?? error.message);
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoadingLive(false);
-        }
-      }
-    }
-
-    loadLiveEvidence();
-
-    return () => {
-      controller.abort();
-      if (ndviImageUrl) URL.revokeObjectURL(ndviImageUrl);
-      if (rgbImageUrl) URL.revokeObjectURL(rgbImageUrl);
-    };
-  }, [currentDate.label, currentGeometry, currentSite]);
 
   useEffect(() => {
     if (!MAPBOX_ACCESS_TOKEN) {
@@ -268,24 +262,18 @@ export function SatelliteViewer() {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
-
-    if (!liveEvidence?.ndviImageUrl) {
-      if (map.getLayer(NDVI_LAYER_ID)) map.removeLayer(NDVI_LAYER_ID);
-      if (map.getSource(NDVI_SOURCE_ID)) map.removeSource(NDVI_SOURCE_ID);
-      return;
-    }
+    if (!map || !mapReady || !displayedNdviUrl) return;
 
     const coordinates = getImageCoordinates(currentGeometry);
     if (map.getSource(NDVI_SOURCE_ID)) {
       map.getSource(NDVI_SOURCE_ID).updateImage({
-        url: liveEvidence.ndviImageUrl,
+        url: displayedNdviUrl,
         coordinates,
       });
     } else {
       map.addSource(NDVI_SOURCE_ID, {
         type: "image",
-        url: liveEvidence.ndviImageUrl,
+        url: displayedNdviUrl,
         coordinates,
       });
       map.addLayer({
@@ -295,16 +283,18 @@ export function SatelliteViewer() {
         paint: {
           "raster-fade-duration": 0,
           "raster-opacity": 0,
+          "raster-resampling": "nearest",
         },
       });
     }
-  }, [currentGeometry, liveEvidence?.ndviImageUrl, mapReady]);
+  }, [currentGeometry, displayedNdviUrl, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !map.getLayer(NDVI_LAYER_ID)) return;
-    map.setPaintProperty(NDVI_LAYER_ID, "raster-opacity", showLiveNdviOverlay ? ndviOpacity : 0);
-  }, [mapReady, ndviOpacity, showLiveNdviOverlay]);
+    map.setPaintProperty(NDVI_LAYER_ID, "raster-resampling", "nearest");
+    map.setPaintProperty(NDVI_LAYER_ID, "raster-opacity", showStaticNdviOverlay ? ndviOpacity : 0);
+  }, [mapReady, ndviOpacity, showStaticNdviOverlay]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -329,7 +319,7 @@ export function SatelliteViewer() {
   }, [currentNdvi, mapReady]);
 
   return (
-    <div className="flex h-[calc(100vh-73px)] min-h-[640px]">
+    <div className="flex h-screen min-h-[640px]">
       <div className="w-72 flex-shrink-0 bg-[#111113] border-r border-zinc-800 flex flex-col overflow-y-auto">
         <div className="p-4 border-b border-zinc-800">
           <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("satellite.mineSite")}</div>
@@ -345,7 +335,7 @@ export function SatelliteViewer() {
                 }`}
               >
                 <div className="text-sm">{site.name}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{site.coords} - {site.area} ha</div>
+                <div className="text-xs text-slate-500 mt-0.5">{site.region}</div>
               </button>
             ))}
           </div>
@@ -383,26 +373,7 @@ export function SatelliteViewer() {
                 }`}
               >
                 <span>{d.label}</span>
-                <span className="font-mono">{d.ndvi.toFixed(2)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 border-b border-zinc-800">
-          <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">{t("satellite.source")}</div>
-          <div className="flex flex-wrap gap-2">
-            {satellites.map((s, i) => (
-              <button
-                key={s}
-                onClick={() => setSelectedSatellite(i)}
-                className={`px-3 py-1 rounded-full text-xs transition-all ${
-                  selectedSatellite === i
-                    ? "bg-blue-500/20 border border-blue-500/40 text-blue-300"
-                    : "border border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-500"
-                }`}
-              >
-                {s}
+                {i === selectedDate && <span className="text-emerald-300">{getNdviBandLabel(getSiteDateNdvi(currentSite, i))}</span>}
               </button>
             ))}
           </div>
@@ -463,6 +434,44 @@ export function SatelliteViewer() {
             </div>
           </div>
         </div>
+
+        <div className="p-4 border-t border-zinc-800">
+          <div className="text-xs text-slate-500 uppercase tracking-wider mb-3">{t("satellite.ndviAnalytics")}</div>
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 mb-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs text-slate-500">{t("satellite.formula")}</div>
+                <div className="mt-1 font-mono text-[11px] text-emerald-300">NDVI = (NIR - RED) / (NIR + RED)</div>
+                <div className="mt-1 text-[11px] text-slate-500">Sentinel-2 B08 + B04</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg text-emerald-300">{getNdviBandLabel(currentNdvi)}</div>
+                <div className="text-[11px] text-slate-500" style={{ color: currentNdviClass.color }}>
+                  {t(currentNdviClass.labelKey)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {ndviStats.map((item) => (
+              <div key={item.key}>
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span className="flex items-center gap-1.5 text-slate-400">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    {t(item.labelKey)}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${item.percent}%`, backgroundColor: item.color }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -470,8 +479,6 @@ export function SatelliteViewer() {
           <div className="text-sm text-slate-300">{currentSite.name}</div>
           <span className="text-slate-700">-</span>
           <div className="text-xs text-slate-500">{currentDate.label}</div>
-          <span className="text-slate-700">-</span>
-          <div className="text-xs text-slate-500">{currentSatellite}</div>
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => mapRef.current?.zoomIn()}
@@ -520,6 +527,14 @@ export function SatelliteViewer() {
               }`}
             />
           )}
+          {showStaticNdviOverlay && (!mapReady || mapError) && (
+            <img
+              src={displayedNdviUrl}
+              alt={`${currentSite.name} demo NDVI`}
+              className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+              style={{ imageRendering: "pixelated", opacity: ndviOpacity }}
+            />
+          )}
           <div
             ref={mapContainerRef}
             className={`absolute inset-0 transition-opacity duration-500 ${
@@ -555,24 +570,20 @@ export function SatelliteViewer() {
                   <Crosshair className="w-3 h-3 text-emerald-300" />
                   <span className="text-emerald-300">{t("satellite.pixelProbe")}</span>
                 </div>
-                <div>{t("common.ndvi")}: <span className="text-emerald-300">{crosshair.ndvi.toFixed(3)}</span></div>
-                <div>{currentSite.coords}</div>
+                <div>{t("common.ndvi")}: <span className="text-emerald-300">{getNdviBandLabel(crosshair.ndvi)}</span></div>
               </div>
             </div>
           )}
 
-          <div className="absolute bottom-4 left-4 text-xs text-slate-100/80 font-mono pointer-events-none">
-            {currentSite.coords}
-          </div>
-
-          {(isLoadingLive || liveError || mapReady) && (
+          {mapReady && (
             <div className="absolute top-4 left-4 rounded-lg bg-[#111113]/90 border border-zinc-800 px-3 py-2 text-xs pointer-events-none">
-              {isLoadingLive && <span className="text-slate-300">Loading Sentinel-2...</span>}
-              {!isLoadingLive && liveError && <span className="text-red-300">{liveError}</span>}
-              {!isLoadingLive && !liveError && mapReady && (
-                <span className="text-emerald-300">
-                  {showLiveNdviOverlay ? "Mapbox satellite + Sentinel-2 NDVI" : "Mapbox satellite"}
-                </span>
+              <div className="text-emerald-300">
+                {showStaticNdviOverlay ? t("satellite.demoNdviLayer") : "Mapbox satellite"}
+              </div>
+              {showStaticNdviOverlay && (
+                <div className="mt-1 text-slate-400">
+                  {t("satellite.recoveredArea")}: <span className="text-slate-200">visible recovery zones</span>
+                </div>
               )}
             </div>
           )}
@@ -593,29 +604,37 @@ export function SatelliteViewer() {
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-xs">
               <div>
                 <div className="text-slate-500">{t("satellite.siteArea")}</div>
-                <div className="text-slate-200 mt-0.5">{currentSite.area} ha</div>
+                <div className="text-slate-200 mt-0.5">pilot zone</div>
               </div>
               <div>
                 <div className="text-slate-500">{t("satellite.meanNdvi")}</div>
-                <div className="text-emerald-300 mt-0.5">{currentNdvi.toFixed(3)}</div>
+                <div className="text-emerald-300 mt-0.5">{getNdviBandLabel(currentNdvi)}</div>
               </div>
               <div>
                 <div className="text-slate-500">{t("satellite.acquisition")}</div>
                 <div className="text-slate-200 mt-0.5">
-                  {liveAcquisition ? new Date(liveAcquisition).toLocaleDateString() : currentDate.label}
+                  {currentDate.label}
                 </div>
               </div>
               <div>
                 <div className="text-slate-500">{t("satellite.resolution")}</div>
-                <div className="text-slate-200 mt-0.5">10m x 10m</div>
+                <div className="text-slate-200 mt-0.5">10m</div>
               </div>
               <div>
                 <div className="text-slate-500">{t("common.validPixels")}</div>
-                <div className="text-emerald-300 mt-0.5">{latestLivePoint?.validPixels ?? currentDate.validPixels}%</div>
+                <div className="text-emerald-300 mt-0.5">clear</div>
               </div>
               <div>
                 <div className="text-slate-500">{t("common.cloudCover")}</div>
-                <div className="text-slate-200 mt-0.5">{Math.round(liveCloudCover ?? currentDate.cloudCover)}%</div>
+                <div className="text-slate-200 mt-0.5">low</div>
+              </div>
+              <div>
+                <div className="text-slate-500">{t("satellite.recoveredArea")}</div>
+                <div className="text-emerald-300 mt-0.5">mapped</div>
+              </div>
+              <div>
+                <div className="text-slate-500">{t("satellite.class")}</div>
+                <div className="mt-0.5" style={{ color: currentNdviClass.color }}>{t(currentNdviClass.labelKey)}</div>
               </div>
             </div>
           </div>
